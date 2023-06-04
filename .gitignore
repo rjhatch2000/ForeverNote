@@ -1,0 +1,5 @@
+.vs/
+_old/
+bin/
+obj/
+Presentation/ForeverNote.GN.Web/App_Data/DataProtectionKeys/
