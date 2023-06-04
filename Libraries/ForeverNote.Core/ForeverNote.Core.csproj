@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Copyright>Copyright © RJ Hatch</Copyright>
+    <Company>RJ Hatch</Company>
+    <Authors>RJ Hatch</Authors>
+    <TieredCompilation>true</TieredCompilation>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="GoogleAuthenticator" Version="3.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="7.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="7.0.0" />
+    <PackageReference Include="Autofac" Version="7.0.1" />
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.6.0" />
+    <PackageReference Include="MongoDB.Bson" Version="2.19.2" />
+    <PackageReference Include="MongoDB.Driver" Version="2.19.2" />
+    <PackageReference Include="MongoDB.Driver.Core" Version="2.19.2" />
+    <PackageReference Include="MongoDB.Driver.GridFS" Version="2.19.2" />
+    <PackageReference Include="DotLiquid" Version="2.2.692" />
+    <PackageReference Include="MediatR" Version="12.0.1" />
+    <PackageReference Include="StackExchange.Redis" Version="2.6.111" />
+  </ItemGroup>
+</Project>
