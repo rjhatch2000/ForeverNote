@@ -169,9 +169,8 @@ namespace ForeverNote.Services.Messages
         /// Gets a newsletter subscription by email and store ID
         /// </summary>
         /// <param name="email">The newsletter subscription email</param>
-        /// <param name="storeId">Store identifier</param>
         /// <returns>NewsLetter subscription</returns>
-        public virtual async Task<NewsLetterSubscription> GetNewsLetterSubscriptionByEmailAndStoreId(string email, string storeId)
+        public virtual async Task<NewsLetterSubscription> GetNewsLetterSubscriptionByEmailAndStoreId(string email)
         {
             if (!CommonHelper.IsValidEmail(email)) 
                 return null;
@@ -179,7 +178,7 @@ namespace ForeverNote.Services.Messages
             email = email.Trim();
 
             var newsLetterSubscriptions = from nls in _subscriptionRepository.Table
-                                          where nls.Email.ToLower() == email.ToLower() && nls.StoreId == storeId
+                                          where nls.Email.ToLower() == email.ToLower()
                                           orderby nls.Id
                                           select nls;
 
@@ -208,14 +207,12 @@ namespace ForeverNote.Services.Messages
         /// Gets the newsletter subscription list
         /// </summary>
         /// <param name="email">Email to search or string. Empty to load all records.</param>
-        /// <param name="storeId">Store identifier. "" to load all records.</param>
-        /// <param name="customerRoleId">Customer role identifier. Used to filter subscribers by customer role. "" to load all records.</param>
         /// <param name="isActive">Value indicating whether subscriber record should be active or not; null to load all records</param>
         /// <param name="pageIndex">Page index</param>
         /// <param name="pageSize">Page size</param>
         /// <returns>NewsLetterSubscription entities</returns>
         public virtual async Task<IPagedList<NewsLetterSubscription>> GetAllNewsLetterSubscriptions(string email = null,
-            string storeId = "", bool? isActive = null, string[] categoryIds = null,
+            bool? isActive = null, string[] categoryIds = null,
             int pageIndex = 0, int pageSize = int.MaxValue)
         {
             //do not filter by customer role
@@ -223,8 +220,6 @@ namespace ForeverNote.Services.Messages
 
             if (!String.IsNullOrEmpty(email))
                 query = query.Where(nls => nls.Email.ToLower().Contains(email.ToLower()));
-            if (!String.IsNullOrEmpty(storeId))
-                query = query.Where(nls => nls.StoreId == storeId);
             if (isActive.HasValue)
                 query = query.Where(nls => nls.Active == isActive.Value);
             if (categoryIds != null && categoryIds.Length > 0)

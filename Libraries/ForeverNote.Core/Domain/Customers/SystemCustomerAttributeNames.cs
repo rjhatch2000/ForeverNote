@@ -16,8 +16,6 @@ namespace ForeverNote.Core.Domain.Customers
         public static string StateProvinceId { get { return "StateProvinceId"; } }
         public static string Phone { get { return "Phone"; } }
         public static string Fax { get { return "Fax"; } }
-        public static string VatNumber { get { return "VatNumber"; } }
-        public static string VatNumberStatusId { get { return "VatNumberStatusId"; } }
         public static string TimeZoneId { get { return "TimeZoneId"; } }
         public static string CustomCustomerAttributes { get { return "CustomCustomerAttributes"; } }
 
@@ -43,14 +41,8 @@ namespace ForeverNote.Core.Domain.Customers
         public static string CurrencyId { get { return "CurrencyId"; } }
         public static string LanguageId { get { return "LanguageId"; } }
         public static string LanguageAutomaticallyDetected { get { return "LanguageAutomaticallyDetected"; } }
-        public static string SelectedPaymentMethod { get { return "SelectedPaymentMethod"; } }
-        public static string SelectedShippingOption { get { return "SelectedShippingOption"; } }
         //value indicating whether customer chose "pick up in store" option
         public static string SelectedPickupPoint { get { return "SelectedPickupPoint"; } }
-        public static string CheckoutAttributes { get { return "CheckoutAttributes"; } }
-        public static string OfferedShippingOptions { get { return "OfferedShippingOptions"; } }
-        public static string ShippingOptionAttributeDescription { get { return "ShippingOptionAttributeDescription"; } }
-        public static string ShippingOptionAttributeXml { get { return "ShippingOptionAttributeXml"; } }
         public static string LastContinueShoppingPage { get { return "LastContinueShoppingPage"; } }
         public static string NotifiedAboutNewPrivateMessages { get { return "NotifiedAboutNewPrivateMessages"; } }
         public static string WorkingThemeName { get { return "WorkingThemeName"; } }

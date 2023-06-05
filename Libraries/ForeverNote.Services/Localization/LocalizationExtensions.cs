@@ -2,9 +2,7 @@ using ForeverNote.Core;
 using ForeverNote.Core.Configuration;
 using ForeverNote.Core.Domain.Localization;
 using ForeverNote.Core.Domain.Security;
-using ForeverNote.Core.Plugins;
 using ForeverNote.Services.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
@@ -111,14 +109,14 @@ namespace ForeverNote.Services.Localization
         /// <param name="ensureTwoPublishedLanguages">A value indicating whether to ensure that we have at least two published languages; otherwise, load only default value</param>
         /// <returns>Localized property</returns>
         public static string GetLocalizedSetting<T>(this T settings, ISettingService settingService,
-            Expression<Func<T, string>> keySelector, string languageId, string storeId,
+            Expression<Func<T, string>> keySelector, string languageId,
             bool returnDefaultValue = true, bool ensureTwoPublishedLanguages = true)
             where T : ISettings, new()
         {
             string key = settings.GetSettingKey(keySelector);
 
             //we do not support localized settings per store (overridden store settings)
-            var setting = settingService.GetSetting(key, storeId: storeId, loadSharedValueIfNotFound: true);
+            var setting = settingService.GetSetting(key);
             if (setting == null)
                 return null;
 
@@ -278,178 +276,5 @@ namespace ForeverNote.Services.Localization
             }
         }
 
-        /// <summary>
-        /// Delete a locale resource
-        /// </summary>
-        /// <param name="plugin">Plugin</param>
-        /// <param name="localizationService">Localization service</param>
-        /// <param name="languageService">Language service</param>
-        /// <param name="resourceName">Resource name</param>
-        public static async Task DeletePluginLocaleResource(this BasePlugin plugin,
-            ILocalizationService localizationService, ILanguageService languageService,
-            string resourceName)
-        {
-            //actually plugin instance is not required
-            if (plugin == null)
-                throw new ArgumentNullException("plugin");
-            if (localizationService == null)
-                throw new ArgumentNullException("localizationService");
-            if (languageService == null)
-                throw new ArgumentNullException("languageService");
-            if (string.IsNullOrEmpty(resourceName))
-                resourceName = resourceName.ToLowerInvariant();
-            foreach (var lang in await languageService.GetAllLanguages(true))
-            {
-                var lsr = await localizationService.GetLocaleStringResourceByName(resourceName, lang.Id, false);
-                if (lsr != null)
-                    await localizationService.DeleteLocaleStringResource(lsr);
-            }
-        }
-
-        /// <summary>
-        /// Add a locale resource (if new) or update an existing one
-        /// </summary>
-        /// <param name="plugin">Plugin</param>
-        /// <param name="localizationService">Localization service</param>
-        /// <param name="languageService">Language service</param>
-        /// <param name="resourceName">Resource name</param>
-        /// <param name="resourceValue">Resource value</param>
-        /// <param name="languageCulture">Language culture code. If null or empty, then a resource will be added for all languages</param>
-        public static async Task AddOrUpdatePluginLocaleResource(this BasePlugin plugin,
-            ILocalizationService localizationService, ILanguageService languageService,
-            string resourceName, string resourceValue, string languageCulture = null)
-        {
-            //actually plugin instance is not required
-            if (plugin == null)
-                throw new ArgumentNullException("plugin");
-            if (localizationService == null)
-                throw new ArgumentNullException("localizationService");
-            if (languageService == null)
-                throw new ArgumentNullException("languageService");
-            if (string.IsNullOrEmpty(resourceName))
-                resourceName = resourceName.ToLowerInvariant();
-            foreach (var lang in await languageService.GetAllLanguages(true))
-            {
-                if (!String.IsNullOrEmpty(languageCulture) && !languageCulture.Equals(lang.LanguageCulture))
-                    continue;
-
-                var lsr = await localizationService.GetLocaleStringResourceByName(resourceName, lang.Id, false);
-                if (lsr == null)
-                {
-                    lsr = new LocaleStringResource
-                    {
-                        LanguageId = lang.Id,
-                        ResourceName = resourceName,
-                        ResourceValue = resourceValue
-                    };
-                    await localizationService.InsertLocaleStringResource(lsr);
-                }
-                else
-                {
-                    lsr.ResourceValue = resourceValue;
-                    await localizationService.UpdateLocaleStringResource(lsr);
-                }
-            }
-        }
-
-
-
-        /// <summary>
-        /// Get localized friendly name of a plugin
-        /// </summary>
-        /// <typeparam name="T">Plugin</typeparam>
-        /// <param name="plugin">Plugin</param>
-        /// <param name="localizationService">Localization service</param>
-        /// <param name="languageId">Language identifier</param>
-        /// <param name="returnDefaultValue">A value indicating whether to return default value (if localized is not found)</param>
-        /// <returns>Localized value</returns>
-        public static string GetLocalizedFriendlyName<T>(this T plugin, ILocalizationService localizationService,
-            string languageId, bool returnDefaultValue = true)
-            where T : IPlugin
-        {
-            if (localizationService == null)
-                throw new ArgumentNullException("localizationService");
-
-            if (plugin == null)
-                throw new ArgumentNullException("plugin");
-
-            if (plugin.PluginDescriptor == null)
-                throw new ArgumentException("Plugin descriptor cannot be loaded");
-
-            string systemName = plugin.PluginDescriptor.SystemName;
-            //localized value
-            string resourceName = string.Format("Plugins.FriendlyName.{0}",
-                systemName);
-            string result = localizationService.GetResource(resourceName, languageId, false, "", true);
-
-            //set default value if required
-            if (String.IsNullOrEmpty(result) && returnDefaultValue)
-                result = plugin.PluginDescriptor.FriendlyName;
-
-            return result;
-        }
-        /// <summary>
-        /// Save localized friendly name of a plugin
-        /// </summary>
-        /// <typeparam name="T">Plugin</typeparam>
-        /// <param name="plugin">Plugin</param>
-        /// <param name="localizationService">Localization service</param>
-        /// <param name="languageId">Language identifier</param>
-        /// <param name="localizedFriendlyName">Localized friendly name</param>
-        public static async Task SaveLocalizedFriendlyName<T>(this T plugin,
-            ILocalizationService localizationService, string languageId,
-            string localizedFriendlyName)
-            where T : IPlugin
-        {
-            if (localizationService == null)
-                throw new ArgumentNullException("localizationService");
-
-            if (String.IsNullOrEmpty(languageId))
-                throw new ArgumentOutOfRangeException("languageId", "Language ID should not be 0");
-
-            if (plugin == null)
-                throw new ArgumentNullException("plugin");
-
-            if (plugin.PluginDescriptor == null)
-                throw new ArgumentException("Plugin descriptor cannot be loaded");
-
-            string systemName = plugin.PluginDescriptor.SystemName;
-
-            //localized value
-            string resourceName = string.Format("Plugins.FriendlyName.{0}", systemName);
-            if (string.IsNullOrEmpty(resourceName))
-                resourceName = resourceName.ToLowerInvariant();
-
-            var resource = await localizationService.GetLocaleStringResourceByName(resourceName, languageId, false);
-
-            if (resource != null)
-            {
-                if (string.IsNullOrWhiteSpace(localizedFriendlyName))
-                {
-                    //delete
-                    await localizationService.DeleteLocaleStringResource(resource);
-                }
-                else
-                {
-                    //update
-                    resource.ResourceValue = localizedFriendlyName;
-                    await localizationService.UpdateLocaleStringResource(resource);
-                }
-            }
-            else
-            {
-                if (!string.IsNullOrWhiteSpace(localizedFriendlyName))
-                {
-                    //insert
-                    resource = new LocaleStringResource
-                    {
-                        LanguageId = languageId,
-                        ResourceName = resourceName,
-                        ResourceValue = localizedFriendlyName,
-                    };
-                    await localizationService.InsertLocaleStringResource(resource);
-                }
-            }
-        }
     }
 }

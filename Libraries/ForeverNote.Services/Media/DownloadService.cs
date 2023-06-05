@@ -1,8 +1,6 @@
 using ForeverNote.Core.Data;
 using ForeverNote.Core.Domain.Catalog;
 using ForeverNote.Core.Domain.Media;
-using ForeverNote.Core.Domain.Orders;
-using ForeverNote.Core.Domain.Payments;
 using ForeverNote.Services.Events;
 using MediatR;
 using MongoDB.Bson;
@@ -134,91 +132,6 @@ namespace ForeverNote.Services.Media
             await _downloadRepository.UpdateAsync(download);
 
             await _mediator.EntityUpdated(download);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether download is allowed
-        /// </summary>
-        /// <param name="order">Order</param>
-        /// <param name="orderItem">Order item to check</param>
-        /// <param name="product">Product</param>
-        /// <returns>True if download is allowed; otherwise, false.</returns>
-        public virtual bool IsDownloadAllowed(Order order, OrderItem orderItem, Product product)
-        {
-            if (orderItem == null)
-                return false;
-
-            if (order == null || order.Deleted)
-                return false;
-
-            //order status
-            if (order.OrderStatus == OrderStatus.Cancelled)
-                return false;
-
-            if (product == null || !product.IsDownload)
-                return false;
-
-            //payment status
-            switch (product.DownloadActivationType)
-            {
-                case DownloadActivationType.WhenOrderIsPaid:
-                    {
-                        if (order.PaymentStatus == PaymentStatus.Paid && order.PaidDateUtc.HasValue)
-                        {
-                            //expiration date
-                            if (product.DownloadExpirationDays.HasValue)
-                            {
-                                if (order.PaidDateUtc.Value.AddDays(product.DownloadExpirationDays.Value) > DateTime.UtcNow)
-                                {
-                                    return true;
-                                }
-                            }
-                            else
-                            {
-                                return true;
-                            }
-                        }
-                    }
-                    break;
-                case DownloadActivationType.Manually:
-                    {
-                        if (orderItem.IsDownloadActivated)
-                        {
-                            //expiration date
-                            if (product.DownloadExpirationDays.HasValue)
-                            {
-                                if (order.CreatedOnUtc.AddDays(product.DownloadExpirationDays.Value) > DateTime.UtcNow)
-                                {
-                                    return true;
-                                }
-                            }
-                            else
-                            {
-                                return true;
-                            }
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether license download is allowed
-        /// </summary>
-        /// <param name="order">Order</param>
-        /// <param name="orderItem">Order item to check</param>
-        /// <param name="product">Product</param>
-        /// <returns>True if license download is allowed; otherwise, false.</returns>
-        public virtual bool IsLicenseDownloadAllowed(Order order, OrderItem orderItem, Product product)
-        {
-            if (orderItem == null)
-                return false;
-
-            return !string.IsNullOrEmpty(orderItem.LicenseDownloadId) && IsDownloadAllowed(order, orderItem, product);
         }
 
         #endregion

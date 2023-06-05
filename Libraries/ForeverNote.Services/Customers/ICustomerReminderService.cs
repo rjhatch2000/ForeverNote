@@ -47,16 +47,9 @@ namespace ForeverNote.Services.Customers
         /// <returns>SerializeCustomerReminderHistory</returns>
         Task<IPagedList<SerializeCustomerReminderHistory>> GetAllCustomerReminderHistory(string customerReminderId, int pageIndex = 0, int pageSize = 2147483647);
 
-        /// <summary>
-        /// Run task Abandoned Cart
-        /// </summary>
-        Task Task_AbandonedCart(string id = "");
         Task Task_RegisteredCustomer(string id = "");
         Task Task_LastActivity(string id = "");
         Task Task_LastPurchase(string id = "");
         Task Task_Birthday(string id = "");
-        Task Task_CompletedOrder(string id = "");
-        Task Task_UnpaidOrder(string id = "");
-
     }
 }

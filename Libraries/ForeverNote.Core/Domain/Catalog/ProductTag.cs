@@ -19,11 +19,6 @@ namespace ForeverNote.Core.Domain.Catalog
         public string Name { get; set; }
 
         /// <summary>
-        /// Gets or sets the sename
-        /// </summary>
-        public string SeName { get; set; }
-
-        /// <summary>
         /// Gets or sets the count
         /// </summary>
         public int Count { get; set; }

@@ -113,10 +113,9 @@ namespace ForeverNote.Services.Localization
         /// <summary>
         /// Gets all languages
         /// </summary>
-        /// <param name="storeId">Load records allowed only in a specified store; pass "" to load all records</param>
         /// <param name="showHidden">A value indicating whether to show hidden records</param>
         /// <returns>Languages</returns>
-        public virtual async Task<IList<Language>> GetAllLanguages(bool showHidden = false, string storeId = "")
+        public virtual async Task<IList<Language>> GetAllLanguages(bool showHidden = false)
         {
             string key = string.Format(LANGUAGES_ALL_KEY, showHidden);
             var languages = await _cacheManager.GetAsync(key, () =>
@@ -129,13 +128,6 @@ namespace ForeverNote.Services.Localization
                 return query.ToListAsync();
             });
 
-            //store mapping
-            if (!string.IsNullOrWhiteSpace(storeId))
-            {
-                languages = languages
-                    .Where(l => l.Stores.Contains(storeId) || !l.LimitedToStores)
-                    .ToList();
-            }
             return languages;
         }
 

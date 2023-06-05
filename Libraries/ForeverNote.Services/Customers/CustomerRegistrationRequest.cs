@@ -21,7 +21,6 @@ namespace ForeverNote.Services.Customers
         public CustomerRegistrationRequest(Customer customer, string email, string username,
             string password,
             PasswordFormat passwordFormat,
-            string storeId,
             bool isApproved = true)
         {
             this.Customer = customer;
@@ -29,7 +28,6 @@ namespace ForeverNote.Services.Customers
             this.Username = username;
             this.Password = password;
             this.PasswordFormat = passwordFormat;
-            this.StoreId = storeId;
             this.IsApproved = isApproved;
         }
 
@@ -53,10 +51,6 @@ namespace ForeverNote.Services.Customers
         /// Password format
         /// </summary>
         public PasswordFormat PasswordFormat { get; set; }
-        /// <summary>
-        /// Store identifier
-        /// </summary>
-        public string StoreId { get; set; }
         /// <summary>
         /// Is approved
         /// </summary>

@@ -13,11 +13,6 @@ namespace ForeverNote.Core.Domain.Messages
         public string CustomerId { get; set; }
 
         /// <summary>
-        /// Gets or sets the store identifier
-        /// </summary>
-        public string StoreId { get; set; }
-
-        /// <summary>
         /// Gets or sets the IP address
         /// </summary>
         public string IpAddress { get; set; }
@@ -52,11 +47,6 @@ namespace ForeverNote.Core.Domain.Messages
         /// Gets or sets the email account identifier
         /// </summary>
         public string EmailAccountId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the vendor identifier
-        /// </summary>
-        public string VendorId { get; set; }
 
         /// <summary>
         /// Gets or sets the contact attribute description

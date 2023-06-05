@@ -8,8 +8,8 @@ namespace ForeverNote.Services.Common
     /// </summary>
     public partial interface IGenericAttributeService
     {
-        Task SaveAttribute<TPropType>(BaseEntity entity, string key, TPropType value, string storeId = "");
-        Task SaveAttribute<TPropType>(string entity, string entityId, string key, TPropType value, string storeId = "");
-        Task<TPropType> GetAttributesForEntity<TPropType>(BaseEntity entity, string key, string storeId = "");
+        Task SaveAttribute<TPropType>(BaseEntity entity, string key, TPropType value);
+        Task SaveAttribute<TPropType>(string entity, string entityId, string key, TPropType value);
+        Task<TPropType> GetAttributesForEntity<TPropType>(BaseEntity entity, string key);
     }
 }

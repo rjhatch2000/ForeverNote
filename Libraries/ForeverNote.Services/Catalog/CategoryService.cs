@@ -6,7 +6,6 @@ using ForeverNote.Services.Customers;
 using ForeverNote.Services.Events;
 using ForeverNote.Services.Localization;
 using ForeverNote.Services.Security;
-using ForeverNote.Services.Stores;
 using MediatR;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -36,12 +35,10 @@ namespace ForeverNote.Services.Catalog
         /// </summary>
         /// <remarks>
         /// {0} : parent category ID
-        /// {1} : show hidden records?
-        /// {2} : current customer ID
-        /// {3} : store ID
-        /// {4} : include all levels (child)
+        /// {1} : current customer ID
+        /// {2} : include all levels (child)
         /// </remarks>
-        private const string CATEGORIES_BY_PARENT_CATEGORY_ID_KEY = "ForeverNote.category.byparent-{0}-{1}-{2}-{3}-{4}";
+        private const string CATEGORIES_BY_PARENT_CATEGORY_ID_KEY = "ForeverNote.category.byparent-{0}-{1}-{2}";
         /// <summary>
         /// Key for caching
         /// </summary>
@@ -51,9 +48,8 @@ namespace ForeverNote.Services.Catalog
         /// {2} : page index
         /// {3} : page size
         /// {4} : current customer ID
-        /// {5} : store ID
         /// </remarks>
-        private const string PRODUCTCATEGORIES_ALLBYCATEGORYID_KEY = "ForeverNote.productcategory.allbycategoryid-{0}-{1}-{2}-{3}-{4}-{5}";
+        private const string PRODUCTCATEGORIES_ALLBYCATEGORYID_KEY = "ForeverNote.productcategory.allbycategoryid-{0}-{1}-{2}-{3}-{4}";
 
         /// <summary>
         /// Key pattern to clear cache
@@ -84,10 +80,8 @@ namespace ForeverNote.Services.Catalog
         private readonly IRepository<Category> _categoryRepository;
         private readonly IRepository<Product> _productRepository;
         private readonly IWorkContext _workContext;
-        private readonly IStoreContext _storeContext;
         private readonly IMediator _mediator;
         private readonly ICacheManager _cacheManager;
-        private readonly IStoreMappingService _storeMappingService;
         private readonly IAclService _aclService;
         private readonly CatalogSettings _catalogSettings;
 
@@ -101,27 +95,22 @@ namespace ForeverNote.Services.Catalog
         /// <param name="cacheManager">Cache manager</param>
         /// <param name="categoryRepository">Category repository</param>
         /// <param name="workContext">Work context</param>
-        /// <param name="storeContext">Store context</param>
-        /// <param name="storeMappingService">Store mapping service</param>
         /// <param name="aclService">ACL service</param>
         /// <param name="catalogSettings">Catalog settings</param>
         public CategoryService(ICacheManager cacheManager,
             IRepository<Category> categoryRepository,
             IRepository<Product> productRepository,
             IWorkContext workContext,
-            IStoreContext storeContext,
             IMediator mediator,
-            IStoreMappingService storeMappingService,
             IAclService aclService,
-            CatalogSettings catalogSettings)
+            CatalogSettings catalogSettings
+        )
         {
             _cacheManager = cacheManager;
             _categoryRepository = categoryRepository;
             _productRepository = productRepository;
             _workContext = workContext;
-            _storeContext = storeContext;
             _mediator = mediator;
-            _storeMappingService = storeMappingService;
             _aclService = aclService;
             _catalogSettings = catalogSettings;
         }
@@ -194,32 +183,23 @@ namespace ForeverNote.Services.Catalog
         /// <param name="pageSize">Page size</param>
         /// <param name="showHidden">A value indicating whether to show hidden records</param>
         /// <returns>Categories</returns>
-        public virtual async Task<IPagedList<Category>> GetAllCategories(string categoryName = "", string storeId = "",
-            int pageIndex = 0, int pageSize = int.MaxValue, bool showHidden = false)
+        public virtual async Task<IPagedList<Category>> GetAllCategories(string categoryName = "",
+            int pageIndex = 0, int pageSize = int.MaxValue)
         {
             var query = from c in _categoryRepository.Table
                         select c;
 
-            if (!showHidden)
-                query = query.Where(c => c.Published);
             if (!String.IsNullOrWhiteSpace(categoryName))
                 query = query.Where(m => m.Name != null && m.Name.ToLower().Contains(categoryName.ToLower()));
 
-            if ((!_catalogSettings.IgnoreAcl || (!String.IsNullOrEmpty(storeId) && !_catalogSettings.IgnoreStoreLimitations)))
+            if (!_catalogSettings.IgnoreAcl)
             {
-                if (!showHidden && !_catalogSettings.IgnoreAcl)
+                if (!_catalogSettings.IgnoreAcl)
                 {
                     //ACL (access control list)
                     var allowedCustomerRolesIds = _workContext.CurrentCustomer.GetCustomerRoleIds();
                     query = from p in query
                             where !p.SubjectToAcl || allowedCustomerRolesIds.Any(x => p.CustomerRoles.Contains(x))
-                            select p;
-                }
-                if (!String.IsNullOrEmpty(storeId) && !_catalogSettings.IgnoreStoreLimitations)
-                {
-                    //Store mapping
-                    query = from p in query
-                            where !p.LimitedToStores || p.Stores.Contains(storeId)
                             select p;
                 }
             }
@@ -237,38 +217,23 @@ namespace ForeverNote.Services.Catalog
         /// Gets all categories filtered by parent category identifier
         /// </summary>
         /// <param name="parentCategoryId">Parent category identifier</param>
-        /// <param name="showHidden">A value indicating whether to show hidden records</param>
         /// <param name="includeAllLevels">A value indicating whether we should load all child levels</param>
         /// <returns>Categories</returns>
         public virtual async Task<IList<Category>> GetAllCategoriesByParentCategoryId(string parentCategoryId = "",
-            bool showHidden = false, bool includeAllLevels = false)
+            bool includeAllLevels = false)
         {
-            var storeId = _storeContext.CurrentStore.Id;
             var customer = _workContext.CurrentCustomer;
-            string key = string.Format(CATEGORIES_BY_PARENT_CATEGORY_ID_KEY, parentCategoryId, showHidden, customer.Id, storeId, includeAllLevels);
+            string key = string.Format(CATEGORIES_BY_PARENT_CATEGORY_ID_KEY, parentCategoryId, customer.Id, includeAllLevels);
             return await _cacheManager.GetAsync(key, async () =>
             {
                 var builder = Builders<Category>.Filter;
                 var filter = builder.Where(c => c.ParentCategoryId == parentCategoryId);
-                if (!showHidden)
-                    filter = filter & builder.Where(c => c.Published);
 
-                if (!showHidden && (!_catalogSettings.IgnoreAcl || !_catalogSettings.IgnoreStoreLimitations))
+                if (!_catalogSettings.IgnoreAcl)
                 {
-                    if (!showHidden && !_catalogSettings.IgnoreAcl)
-                    {
-                        //ACL (access control list)
-                        var allowedCustomerRolesIds = customer.GetCustomerRoleIds();
-                        filter = filter & (builder.AnyIn(x => x.CustomerRoles, allowedCustomerRolesIds) | builder.Where(x => !x.SubjectToAcl));
-
-                    }
-                    if (!_catalogSettings.IgnoreStoreLimitations)
-                    {
-                        //Store mapping
-                        var currentStoreId = new List<string> { storeId };
-                        filter = filter & (builder.AnyIn(x => x.Stores, currentStoreId) | builder.Where(x => !x.LimitedToStores));
-                    }
-
+                    //ACL (access control list)
+                    var allowedCustomerRolesIds = customer.GetCustomerRoleIds();
+                    filter = filter & (builder.AnyIn(x => x.CustomerRoles, allowedCustomerRolesIds) | builder.Where(x => !x.SubjectToAcl));
                 }
                 var categories = _categoryRepository.Collection.Find(filter).SortBy(x => x.DisplayOrder).ToList();
                 if (includeAllLevels)
@@ -277,7 +242,7 @@ namespace ForeverNote.Services.Catalog
                     //add child levels
                     foreach (var category in categories)
                     {
-                        childCategories.AddRange(await GetAllCategoriesByParentCategoryId(category.Id, showHidden, includeAllLevels));
+                        childCategories.AddRange(await GetAllCategoriesByParentCategoryId(category.Id, includeAllLevels));
                     }
                     categories.AddRange(childCategories);
                 }
@@ -288,22 +253,17 @@ namespace ForeverNote.Services.Catalog
         /// <summary>
         /// Gets all categories displayed on the home page
         /// </summary>
-        /// <param name="showHidden">A value indicating whether to show hidden records</param>
         /// <returns>Categories</returns>
-        public virtual async Task<IList<Category>> GetAllCategoriesDisplayedOnHomePage(bool showHidden = false)
+        public virtual async Task<IList<Category>> GetAllCategoriesDisplayedOnHomePage()
         {
             var builder = Builders<Category>.Filter;
-            var filter = builder.Eq(x => x.Published, true);
-            filter = filter & builder.Eq(x => x.ShowOnHomePage, true);
+            var filter = builder.Eq(x => x.ShowOnHomePage, true);
             var query = _categoryRepository.Collection.Find(filter).SortBy(x => x.DisplayOrder);
 
             var categories = await query.ToListAsync();
-            if (!showHidden)
-            {
-                categories = categories
-                    .Where(c => _aclService.Authorize(c) && _storeMappingService.Authorize(c))
-                    .ToList();
-            }
+            categories = categories
+                .Where(c => _aclService.Authorize(c))
+                .ToList();
 
             return categories;
         }
@@ -311,22 +271,18 @@ namespace ForeverNote.Services.Catalog
         /// <summary>
         /// Gets all categories displayed on the home page
         /// </summary>
-        /// <param name="showHidden">A value indicating whether to show hidden records</param>
         /// <returns>Categories</returns>
-        public virtual async Task<IList<Category>> GetAllCategoriesFeaturedProductsOnHomePage(bool showHidden = false)
+        public virtual async Task<IList<Category>> GetAllCategoriesFeaturedProductsOnHomePage()
         {
             var builder = Builders<Category>.Filter;
-            var filter = builder.Eq(x => x.Published, true);
-            filter = filter & builder.Eq(x => x.FeaturedProductsOnHomaPage, true);
+            var filter = builder.Eq(x => x.FeaturedProductsOnHomaPage, true);
             var query = _categoryRepository.Collection.Find(filter).SortBy(x => x.DisplayOrder);
 
             var categories = await query.ToListAsync();
-            if (!showHidden)
-            {
-                categories = categories
-                    .Where(c => _aclService.Authorize(c) && _storeMappingService.Authorize(c))
-                    .ToList();
-            }
+            
+            categories = categories
+                .Where(c => _aclService.Authorize(c))
+                .ToList();
             return categories;
         }
 
@@ -338,11 +294,10 @@ namespace ForeverNote.Services.Catalog
         public virtual async Task<IList<Category>> GetAllCategoriesSearchBox()
         {
             var builder = Builders<Category>.Filter;
-            var filter = builder.Eq(x => x.Published, true);
-            filter = filter & builder.Eq(x => x.ShowOnSearchBox, true);
+            var filter = builder.Eq(x => x.ShowOnSearchBox, true);
             var query = _categoryRepository.Collection.Find(filter).SortBy(x => x.SearchBoxDisplayOrder);
             var categories = (await query.ToListAsync())
-                .Where(c => _aclService.Authorize(c) && _storeMappingService.Authorize(c))
+                .Where(c => _aclService.Authorize(c))
                 .ToList();
 
             return categories;
@@ -352,12 +307,8 @@ namespace ForeverNote.Services.Catalog
         /// Get category breadcrumb 
         /// </summary>
         /// <param name="category">Category</param>
-        /// <param name="categoryService">Category service</param>
-        /// <param name="aclService">ACL service</param>
-        /// <param name="storeMappingService">Store mapping service</param>
-        /// <param name="showHidden">A value indicating whether to load hidden records</param>
         /// <returns>Category breadcrumb </returns>
-        public virtual async Task<IList<Category>> GetCategoryBreadCrumb(Category category, bool showHidden = false)
+        public virtual async Task<IList<Category>> GetCategoryBreadCrumb(Category category)
         {
             var result = new List<Category>();
 
@@ -365,9 +316,7 @@ namespace ForeverNote.Services.Catalog
             var alreadyProcessedCategoryIds = new List<string>();
 
             while (category != null && //not null                
-                (showHidden || category.Published) && //published
-                (showHidden || _aclService.Authorize(category)) && //ACL
-                (showHidden || _storeMappingService.Authorize(category)) && //Store mapping
+                _aclService.Authorize(category) && //ACL
                 !alreadyProcessedCategoryIds.Contains(category.Id)) //prevent circular references
             {
                 result.Add(category);
@@ -385,9 +334,8 @@ namespace ForeverNote.Services.Catalog
         /// </summary>
         /// <param name="category">Category</param>
         /// <param name="allCategories">All categories</param>
-        /// <param name="showHidden">A value indicating whether to load hidden records</param>
         /// <returns>Category breadcrumb </returns>
-        public virtual IList<Category> GetCategoryBreadCrumb(Category category, IList<Category> allCategories, bool showHidden = false)
+        public virtual IList<Category> GetCategoryBreadCrumb(Category category, IList<Category> allCategories)
         {
             var result = new List<Category>();
 
@@ -395,9 +343,7 @@ namespace ForeverNote.Services.Catalog
             var alreadyProcessedCategoryIds = new List<string>();
 
             while (category != null && //not null                
-                (showHidden || category.Published) && //published
-                (showHidden || _aclService.Authorize(category)) && //ACL
-                (showHidden || _storeMappingService.Authorize(category)) && //Store mapping
+                _aclService.Authorize(category) && //ACL
                 !alreadyProcessedCategoryIds.Contains(category.Id)) //prevent circular references
             {
                 result.Add(category);
@@ -414,7 +360,7 @@ namespace ForeverNote.Services.Catalog
 
         /// <summary>
         /// Get formatted category breadcrumb 
-        /// Note: ACL and store mapping is ignored
+        /// Note: ACL mapping is ignored
         /// </summary>
         /// <param name="category">Category</param>
         /// <param name="separator">Separator</param>
@@ -424,7 +370,7 @@ namespace ForeverNote.Services.Catalog
         {
             string result = string.Empty;
 
-            var breadcrumb = await GetCategoryBreadCrumb(category, true);
+            var breadcrumb = await GetCategoryBreadCrumb(category);
             for (int i = 0; i <= breadcrumb.Count - 1; i++)
             {
                 var categoryName = breadcrumb[i].GetLocalized(x => x.Name, languageId);
@@ -437,7 +383,7 @@ namespace ForeverNote.Services.Catalog
         }
         /// <summary>
         /// Get formatted category breadcrumb 
-        /// Note: ACL and store mapping is ignored
+        /// Note: ACL mapping is ignored
         /// </summary>
         /// <param name="category">Category</param>
         /// <param name="allCategories">All categories</param>
@@ -449,7 +395,7 @@ namespace ForeverNote.Services.Catalog
         {
             string result = string.Empty;
 
-            var breadcrumb = GetCategoryBreadCrumb(category, allCategories, true);
+            var breadcrumb = GetCategoryBreadCrumb(category, allCategories);
             for (int i = 0; i <= breadcrumb.Count - 1; i++)
             {
                 var categoryName = breadcrumb[i].GetLocalized(x => x.Name, languageId);
@@ -576,12 +522,12 @@ namespace ForeverNote.Services.Catalog
             if (String.IsNullOrEmpty(categoryId))
                 return new PagedList<ProductCategory>(new List<ProductCategory>(), pageIndex, pageSize);
 
-            string key = string.Format(PRODUCTCATEGORIES_ALLBYCATEGORYID_KEY, showHidden, categoryId, pageIndex, pageSize, _workContext.CurrentCustomer.Id, _storeContext.CurrentStore.Id);
+            string key = string.Format(PRODUCTCATEGORIES_ALLBYCATEGORYID_KEY, showHidden, categoryId, pageIndex, pageSize, _workContext.CurrentCustomer.Id);
             return await _cacheManager.GetAsync(key, () =>
             {
                 var query = _productRepository.Table.Where(x => x.ProductCategories.Any(y => y.CategoryId == categoryId));
 
-                if (!showHidden && (!_catalogSettings.IgnoreAcl || !_catalogSettings.IgnoreStoreLimitations))
+                if (!showHidden && (!_catalogSettings.IgnoreAcl))
                 {
                     if (!_catalogSettings.IgnoreAcl)
                     {
@@ -591,17 +537,6 @@ namespace ForeverNote.Services.Catalog
                                 where !p.SubjectToAcl || allowedCustomerRolesIds.Any(x => p.CustomerRoles.Contains(x))
                                 select p;
                     }
-                    if (!_catalogSettings.IgnoreStoreLimitations)
-                    {
-                        //Store mapping
-                        var currentStoreId = _storeContext.CurrentStore.Id;
-                        query = from p in query
-                                where !p.LimitedToStores || p.Stores.Contains(currentStoreId)
-                                select p;
-
-                    }
-
-
                 }
                 var query_productCategories = from prod in query
                                               from pc in prod.ProductCategories

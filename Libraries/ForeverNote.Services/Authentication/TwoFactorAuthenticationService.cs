@@ -1,9 +1,9 @@
-﻿using Google.Authenticator;
-using ForeverNote.Core;
+﻿using ForeverNote.Core.Domain.Common;
 using ForeverNote.Core.Domain.Customers;
 using ForeverNote.Core.Domain.Localization;
 using ForeverNote.Services.Common;
 using ForeverNote.Services.Messages;
+using Google.Authenticator;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
@@ -12,19 +12,20 @@ namespace ForeverNote.Services.Authentication
 {
     public class TwoFactorAuthenticationService : ITwoFactorAuthenticationService
     {
-        private readonly IStoreContext _storeContext;
+        private readonly CommonSettings _commonSettings;
         private readonly IWorkflowMessageService _workflowMessageService;
         private readonly IGenericAttributeService _genericAttributeService;
         private readonly IServiceProvider _serviceProvider;
         private TwoFactorAuthenticator _twoFactorAuthentication;
 
         public TwoFactorAuthenticationService(
-            IStoreContext storeContext,
+            CommonSettings commonSettings,
             IWorkflowMessageService workflowMessageService,
             IGenericAttributeService genericAttributeService,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider
+        )
         {
-            _storeContext = storeContext;
+            _commonSettings = commonSettings;
             _workflowMessageService = workflowMessageService;
             _genericAttributeService = genericAttributeService;
             _serviceProvider = serviceProvider;
@@ -62,7 +63,7 @@ namespace ForeverNote.Services.Authentication
             switch (twoFactorAuthenticationType)
             {
                 case TwoFactorAuthenticationType.AppVerification:
-                    var setupInfo = _twoFactorAuthentication.GenerateSetupCode(_storeContext.CurrentStore.CompanyName, customer.Email, secretKey, false, 3);
+                    var setupInfo = _twoFactorAuthentication.GenerateSetupCode(_commonSettings.Sitename, customer.Email, secretKey, false, 3);
                     model.CustomValues.Add("QrCodeImageUrl", setupInfo.QrCodeSetupImageUrl);
                     model.CustomValues.Add("ManualEntryQrCode", setupInfo.ManualEntryKey);
                     break;
@@ -72,7 +73,7 @@ namespace ForeverNote.Services.Authentication
                     await _genericAttributeService.SaveAttribute(customer, SystemCustomerAttributeNames.TwoFactorValidCode, token);
                     await _genericAttributeService.SaveAttribute(customer, SystemCustomerAttributeNames.TwoFactorCodeValidUntil, DateTime.UtcNow.AddMinutes(30));
                     model.CustomValues.Add("Token", token);
-                    await _workflowMessageService.SendCustomerEmailTokenValidationMessage(customer, _storeContext.CurrentStore, token, language.Id);
+                    await _workflowMessageService.SendCustomerEmailTokenValidationMessage(customer, token, language.Id);
                     break;
 
                 case TwoFactorAuthenticationType.SMSVerification:

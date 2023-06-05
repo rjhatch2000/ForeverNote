@@ -79,13 +79,8 @@ namespace ForeverNote.Core.Domain.Customers
         {
             private ICollection<string> _products;
             private ICollection<string> _categories;
-            private ICollection<string> _manufacturers;
-            private ICollection<string> _vendors;
             private ICollection<string> _customerRoles;
             private ICollection<string> _customerTags;
-            private ICollection<string> _stores;
-            private ICollection<ProductAttributeValue> _productAttribute;
-            private ICollection<ProductSpecification> _productSpecification;
             private ICollection<CustomerRegister> _customerRegister;
             private ICollection<CustomerRegister> _customCustomerAttributes;
             private ICollection<Url> _urlReferrer;
@@ -122,17 +117,6 @@ namespace ForeverNote.Core.Domain.Customers
                 protected set { _categories = value; }
             }
 
-            public virtual ICollection<string> Manufacturers
-            {
-                get { return _manufacturers ?? (_manufacturers = new List<string>()); }
-                protected set { _manufacturers = value; }
-            }
-
-            public virtual ICollection<string> Vendors
-            {
-                get { return _vendors ?? (_vendors = new List<string>()); }
-                protected set { _vendors = value; }
-            }
             public virtual ICollection<string> CustomerRoles
             {
                 get { return _customerRoles ?? (_customerRoles = new List<string>()); }
@@ -142,22 +126,6 @@ namespace ForeverNote.Core.Domain.Customers
             {
                 get { return _customerTags ?? (_customerTags = new List<string>()); }
                 protected set { _customerTags = value; }
-            }
-            public virtual ICollection<string> Stores
-            {
-                get { return _stores ?? (_stores = new List<string>()); }
-                protected set { _stores = value; }
-            }
-            public virtual ICollection<ProductAttributeValue> ProductAttribute
-            {
-                get { return _productAttribute ?? (_productAttribute = new List<ProductAttributeValue>()); }
-                protected set { _productAttribute = value; }
-            }
-
-            public virtual ICollection<ProductSpecification> ProductSpecifications
-            {
-                get { return _productSpecification ?? (_productSpecification = new List<ProductSpecification>()); }
-                protected set { _productSpecification = value; }
             }
 
             public virtual ICollection<CustomerRegister> CustomerRegistration
@@ -184,21 +152,9 @@ namespace ForeverNote.Core.Domain.Customers
                 protected set { _urlCurrent = value; }
             }
 
-            public partial class ProductAttributeValue: SubBaseEntity
-            {
-                public string ProductAttributeId { get; set; }
-                public string Name { get; set; }
-            }
-
             public partial class Url : SubBaseEntity
             {
                 public string Name { get; set; }
-            }
-
-            public partial class ProductSpecification : SubBaseEntity
-            {
-                public string ProductSpecyficationId { get; set; }
-                public string ProductSpecyficationValueId { get; set; }
             }
 
             public partial class CustomerRegister : SubBaseEntity

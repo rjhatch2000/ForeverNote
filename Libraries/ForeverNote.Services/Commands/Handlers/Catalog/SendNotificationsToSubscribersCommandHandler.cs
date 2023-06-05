@@ -38,14 +38,14 @@ namespace ForeverNote.Services.Commands.Handlers.Catalog
                 throw new ArgumentNullException("product");
 
             int result = 0;
-            var subscriptions = await GetAllSubscriptionsByProductId(request.Product.Id, request.AttributeXml, request.Warehouse);
+            var subscriptions = await GetAllSubscriptionsByProductId(request.Product.Id, request.AttributeXml);
             foreach (var subscription in subscriptions)
             {
                 var customer = await _customerService.GetCustomerById(subscription.CustomerId);
                 //ensure that customer is registered (simple and fast way)
                 if (customer != null && CommonHelper.IsValidEmail(customer.Email))
                 {
-                    var customerLanguageId = customer.GetAttributeFromEntity<string>(SystemCustomerAttributeNames.LanguageId, subscription.StoreId);
+                    var customerLanguageId = customer.GetAttributeFromEntity<string>(SystemCustomerAttributeNames.LanguageId);
                     await _workflowMessageService.SendBackInStockNotification(customer, request.Product, subscription, customerLanguageId);
                     result++;
                 }
@@ -59,21 +59,14 @@ namespace ForeverNote.Services.Commands.Handlers.Catalog
         /// Gets all subscriptions
         /// </summary>
         /// <param name="productId">Product identifier</param>
-        /// <param name="storeId">Store identifier; pass "" to load all records</param>
-        /// <param name="pageIndex">Page index</param>
-        /// <param name="pageSize">Page size</param>
         /// <returns>Subscriptions</returns>
-        private async Task<IList<BackInStockSubscription>> GetAllSubscriptionsByProductId(string productId, string attributeXml, string warehouseId)
+        private async Task<IList<BackInStockSubscription>> GetAllSubscriptionsByProductId(string productId, string attributeXml)
         {
             var query = _backInStockSubscriptionRepository.Table;
             //product
             query = query.Where(biss => biss.ProductId == productId);
 
-            //warehouse
-            if (!string.IsNullOrEmpty(warehouseId))
-                query = query.Where(biss => biss.WarehouseId == warehouseId);
-
-            //warehouse
+            //attributes
             if (!string.IsNullOrEmpty(attributeXml))
                 query = query.Where(biss => biss.AttributeXml == attributeXml);
 

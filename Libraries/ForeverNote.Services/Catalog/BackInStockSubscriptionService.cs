@@ -61,27 +61,21 @@ namespace ForeverNote.Services.Catalog
         /// Gets all subscriptions
         /// </summary>
         /// <param name="customerId">Customer identifier</param>
-        /// <param name="storeId">Store identifier; pass "" to load all records</param>
         /// <param name="pageIndex">Page index</param>
         /// <param name="pageSize">Page size</param>
         /// <returns>Subscriptions</returns>
-        public virtual async Task<IPagedList<BackInStockSubscription>> GetAllSubscriptionsByCustomerId(string customerId,
-            string storeId = "", int pageIndex = 0, int pageSize = int.MaxValue)
+        public virtual async Task<IPagedList<BackInStockSubscription>> GetAllSubscriptionsByCustomerId(
+            string customerId, int pageIndex = 0, int pageSize = int.MaxValue)
         {
             var query = _backInStockSubscriptionRepository.Table;
 
             //customer
             query = query.Where(biss => biss.CustomerId == customerId);
-            //store
-            if (!String.IsNullOrEmpty(storeId))
-                query = query.Where(biss => biss.StoreId == storeId);
 
             query = query.OrderByDescending(biss => biss.CreatedOnUtc);
 
             return await PagedList<BackInStockSubscription>.Create(query, pageIndex, pageSize);
         }
-
-
 
         /// <summary>
         /// Gets all subscriptions
@@ -89,17 +83,14 @@ namespace ForeverNote.Services.Catalog
         /// <param name="customerId">Customer id</param>
         /// <param name="productId">Product identifier</param>
         /// <param name="attributeXml">Attribute xml</param>
-        /// <param name="storeId">Store identifier</param>
         /// <param name="warehouseId">Warehouse identifier</param>
         /// <returns>Subscriptions</returns>
-        public virtual async Task<BackInStockSubscription> FindSubscription(string customerId, string productId, string attributeXml, string storeId, string warehouseId)
+        public virtual async Task<BackInStockSubscription> FindSubscription(string customerId, string productId, string attributeXml)
         {
             var query = from biss in _backInStockSubscriptionRepository.Table
                         orderby biss.CreatedOnUtc descending
                         where biss.CustomerId == customerId &&
-                              biss.ProductId == productId &&
-                              biss.StoreId == storeId &&
-                              biss.WarehouseId == warehouseId
+                              biss.ProductId == productId
                         select biss;
 
             if (!string.IsNullOrEmpty(attributeXml))
@@ -154,16 +145,14 @@ namespace ForeverNote.Services.Catalog
         /// Send notification to subscribers
         /// </summary>
         /// <param name="product">Product</param>
-        /// <param name="warehouse">Warehouse ident</param>
         /// <returns>Number of sent email</returns>
-        public virtual async Task SendNotificationsToSubscribers(Product product, string warehouse)
+        public virtual async Task SendNotificationsToSubscribers(Product product)
         {
             if (product == null)
                 throw new ArgumentNullException("product");
 
             var subscriptions = await _mediator.Send(new SendNotificationsToSubscribersCommand() {
                 Product = product,
-                Warehouse = warehouse,
             });
 
             for (var i = 0; i <= subscriptions.Count - 1; i++)
@@ -175,16 +164,14 @@ namespace ForeverNote.Services.Catalog
         /// </summary>
         /// <param name="product">Product</param>
         /// <param name="attributeXml">Attribute xml</param>
-        /// <param name="warehouse">Warehouse ident</param>
         /// <returns>Number of sent email</returns>
-        public virtual async Task SendNotificationsToSubscribers(Product product, string attributeXml, string warehouse)
+        public virtual async Task SendNotificationsToSubscribers(Product product, string attributeXml)
         {
             if (product == null)
                 throw new ArgumentNullException("product");
 
             var subscriptions = await _mediator.Send(new SendNotificationsToSubscribersCommand() {
                 Product = product,
-                Warehouse = warehouse,
                 AttributeXml = attributeXml
             });
 

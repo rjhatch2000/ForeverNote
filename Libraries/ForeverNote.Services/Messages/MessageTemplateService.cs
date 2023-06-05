@@ -3,8 +3,6 @@ using ForeverNote.Core.Data;
 using ForeverNote.Core.Domain.Catalog;
 using ForeverNote.Core.Domain.Messages;
 using ForeverNote.Services.Events;
-using ForeverNote.Services.Localization;
-using ForeverNote.Services.Stores;
 using MediatR;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -23,17 +21,15 @@ namespace ForeverNote.Services.Messages
         /// Key for caching
         /// </summary>
         /// <remarks>
-        /// {0} : store ID
         /// </remarks>
-        private const string MESSAGETEMPLATES_ALL_KEY = "ForeverNote.messagetemplate.all-{0}";
+        private const string MESSAGETEMPLATES_ALL_KEY = "ForeverNote.messagetemplate.all";
         /// <summary>
         /// Key for caching
         /// </summary>
         /// <remarks>
         /// {0} : template name
-        /// {1} : store ID
         /// </remarks>
-        private const string MESSAGETEMPLATES_BY_NAME_KEY = "ForeverNote.messagetemplate.name-{0}-{1}";
+        private const string MESSAGETEMPLATES_BY_NAME_KEY = "ForeverNote.messagetemplate.name-{0}";
         /// <summary>
         /// Key pattern to clear cache
         /// </summary>
@@ -44,8 +40,6 @@ namespace ForeverNote.Services.Messages
         #region Fields
 
         private readonly IRepository<MessageTemplate> _messageTemplateRepository;
-        private readonly IStoreMappingService _storeMappingService;
-        private readonly CatalogSettings _catalogSettings;
         private readonly IMediator _mediator;
         private readonly ICacheManager _cacheManager;
 
@@ -57,20 +51,15 @@ namespace ForeverNote.Services.Messages
         /// Ctor
         /// </summary>
         /// <param name="cacheManager">Cache manager</param>
-        /// <param name="storeMappingService">Store mapping service</param>
         /// <param name="messageTemplateRepository">Message template repository</param>
-        /// <param name="catalogSettings">Catalog settings</param>
         /// <param name="mediator">Mediator</param>
         public MessageTemplateService(ICacheManager cacheManager,
-            IStoreMappingService storeMappingService,
             IRepository<MessageTemplate> messageTemplateRepository,
-            CatalogSettings catalogSettings,
-            IMediator mediator)
+            IMediator mediator
+        )
         {
             _cacheManager = cacheManager;
-            _storeMappingService = storeMappingService;
             _messageTemplateRepository = messageTemplateRepository;
-            _catalogSettings = catalogSettings;
             _mediator = mediator;
         }
 
@@ -143,14 +132,13 @@ namespace ForeverNote.Services.Messages
         /// Gets a message template
         /// </summary>
         /// <param name="messageTemplateName">Message template name</param>
-        /// <param name="storeId">Store identifier</param>
         /// <returns>Message template</returns>
-        public virtual async Task<MessageTemplate> GetMessageTemplateByName(string messageTemplateName, string storeId)
+        public virtual async Task<MessageTemplate> GetMessageTemplateByName(string messageTemplateName)
         {
             if (string.IsNullOrWhiteSpace(messageTemplateName))
                 throw new ArgumentException("messageTemplateName");
 
-            string key = string.Format(MESSAGETEMPLATES_BY_NAME_KEY, messageTemplateName, storeId);
+            string key = string.Format(MESSAGETEMPLATES_BY_NAME_KEY, messageTemplateName);
             return await _cacheManager.GetAsync(key, async () =>
             {
                 var query = _messageTemplateRepository.Table;
@@ -158,14 +146,6 @@ namespace ForeverNote.Services.Messages
                 query = query.Where(t => t.Name == messageTemplateName);
                 query = query.OrderBy(t => t.Id);
                 var templates = await query.ToListAsync();
-
-                //store mapping
-                if (!String.IsNullOrEmpty(storeId))
-                {
-                    templates = templates
-                        .Where(t => _storeMappingService.Authorize(t, storeId))
-                        .ToList();
-                }
 
                 return templates.FirstOrDefault();
             });
@@ -175,25 +155,16 @@ namespace ForeverNote.Services.Messages
         /// <summary>
         /// Gets all message templates
         /// </summary>
-        /// <param name="storeId">Store identifier; pass "" to load all records</param>
         /// <returns>Message template list</returns>
-        public virtual async Task<IList<MessageTemplate>> GetAllMessageTemplates(string storeId)
+        public virtual async Task<IList<MessageTemplate>> GetAllMessageTemplates()
         {
-            string key = string.Format(MESSAGETEMPLATES_ALL_KEY, storeId);
+            string key = string.Format(MESSAGETEMPLATES_ALL_KEY);
             return await _cacheManager.GetAsync(key, () =>
             {
                 var query = _messageTemplateRepository.Table;
 
                 query = query.OrderBy(t => t.Name);
 
-                //Store mapping
-                if (!String.IsNullOrEmpty(storeId) && !_catalogSettings.IgnoreStoreLimitations)
-                {
-                    query = from p in query
-                            where !p.LimitedToStores || p.Stores.Contains(storeId)
-                            select p;
-                    query = query.OrderBy(t => t.Name);
-                }
                 return query.ToListAsync();
             });
         }
@@ -217,9 +188,7 @@ namespace ForeverNote.Services.Messages
                 IsActive = messageTemplate.IsActive,
                 AttachedDownloadId = messageTemplate.AttachedDownloadId,
                 EmailAccountId = messageTemplate.EmailAccountId,
-                LimitedToStores = messageTemplate.LimitedToStores,
                 Locales = messageTemplate.Locales,
-                Stores = messageTemplate.Stores,
                 DelayBeforeSend = messageTemplate.DelayBeforeSend,
                 DelayPeriod = messageTemplate.DelayPeriod
             };

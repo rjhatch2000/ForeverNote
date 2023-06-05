@@ -64,22 +64,5 @@ namespace ForeverNote.Core.Domain.Customers.Tests
             Assert.AreEqual<PasswordFormat>(customer.PasswordFormat, PasswordFormat.Clear);
         }
 
-        [TestMethod()]
-        public void Can_remove_address_assigned_as_billing_address() {
-            Customer customer = new Customer();
-            Address address0101 = new Address { Id = "123" };
-            customer.Addresses.Add(address0101);
-
-            customer.BillingAddress = address0101; //I'm assigning 1st and only one
-
-            Assert.IsTrue(customer.Addresses.Contains(address0101));
-            Assert.AreEqual(address0101, customer.BillingAddress);
-
-            //up to this line, we have the same address either in Addresses and BillingAddress
-            customer.RemoveAddress(address0101);
-            
-            Assert.IsFalse(customer.Addresses.Contains(address0101)); //false - address removed from Addresses
-            Assert.AreNotEqual(address0101, customer.BillingAddress); //false - address removed from BillingAddress
-        }
     }
 }

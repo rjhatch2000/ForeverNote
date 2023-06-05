@@ -65,15 +65,14 @@ namespace ForeverNote.Services.Common
         /// Gets a search term record by keyword
         /// </summary>
         /// <param name="keyword">Search term keyword</param>
-        /// <param name="storeId">Store identifier</param>
         /// <returns>Search term</returns>
-        public virtual async Task<SearchTerm> GetSearchTermByKeyword(string keyword, string storeId)
+        public virtual async Task<SearchTerm> GetSearchTermByKeyword(string keyword)
         {
             if (String.IsNullOrEmpty(keyword))
                 return null;
 
             var query = from st in _searchTermRepository.Table
-                        where st.Keyword == keyword && st.StoreId == storeId
+                        where st.Keyword == keyword
                         orderby st.Id
                         select st;
             return await query.FirstOrDefaultAsync();

@@ -27,8 +27,6 @@ namespace ForeverNote.Services.Commands.Handlers.Common
             var contactus = new ContactUs() {
                 CreatedOnUtc = DateTime.UtcNow,
                 CustomerId = request.CustomerId,
-                StoreId = request.StoreId,
-                VendorId = request.VendorId,
                 Email = request.Email,
                 FullName = request.FullName,
                 Subject = request.Subject,

@@ -14,8 +14,6 @@ namespace ForeverNote.Core.Domain.Messages
 
         public string CustomerId { get; set; }
 
-        public string StoreId { get; set; }
-
         public DateTime CreatedDateUtc { get; set; }
 
     }

@@ -47,10 +47,15 @@ namespace ForeverNote.Services.Commands.Handlers.Customers
 
         public async Task<bool> Handle(CustomerActionEventReactionCommand request, CancellationToken cancellationToken)
         {
-            await Reaction(request.CustomerActionTypes, request.Action, request.CustomerId, request.CartItem, request.Order);
+            await Reaction(request.CustomerActionTypes, request.Action, request.CustomerId);
             return true;
         }
-        public async Task Reaction(IList<CustomerActionType> customerActionTypes, CustomerAction action, string customerId, ShoppingCartItem cartItem, Order order)
+
+        public async Task Reaction(
+            IList<CustomerActionType> customerActionTypes,
+            CustomerAction action,
+            string customerId
+        )
         {
             if (action.ReactionType == CustomerReactionTypeEnum.Banner)
             {
@@ -70,19 +75,6 @@ namespace ForeverNote.Services.Commands.Handlers.Customers
             if (action.ReactionType == CustomerReactionTypeEnum.Email)
             {
                 var workflowMessageService = _serviceProvider.GetRequiredService<IWorkflowMessageService>();
-                if (action.ActionTypeId == customerActionTypes.FirstOrDefault(x => x.SystemKeyword == "AddToCart").Id)
-                {
-                    if (cartItem != null)
-                        await workflowMessageService.SendCustomerActionEvent_AddToCart_Notification(action, cartItem,
-                            _workContext.WorkingLanguage.Id, customer);
-                }
-
-                if (action.ActionTypeId == customerActionTypes.FirstOrDefault(x => x.SystemKeyword == "AddOrder").Id)
-                {
-                    if (order != null)
-                        await workflowMessageService.SendCustomerActionEvent_AddToOrder_Notification(action, order, customer,
-                            _workContext.WorkingLanguage.Id);
-                }
 
                 if (action.ActionTypeId != customerActionTypes.FirstOrDefault(x => x.SystemKeyword == "AddOrder").Id && action.ActionTypeId != customerActionTypes.FirstOrDefault(x => x.SystemKeyword == "AddToCart").Id)
                 {

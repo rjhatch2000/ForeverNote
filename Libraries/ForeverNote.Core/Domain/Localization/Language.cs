@@ -1,4 +1,3 @@
-using ForeverNote.Core.Domain.Stores;
 using System.Collections.Generic;
 
 namespace ForeverNote.Core.Domain.Localization
@@ -6,13 +5,8 @@ namespace ForeverNote.Core.Domain.Localization
     /// <summary>
     /// Represents a language
     /// </summary>
-    public partial class Language : BaseEntity, IStoreMappingSupported
+    public partial class Language : BaseEntity
     {
-        public Language()
-        {
-            Stores = new List<string>();
-        }
-
         /// <summary>
         /// Gets or sets the name
         /// </summary>
@@ -39,17 +33,6 @@ namespace ForeverNote.Core.Domain.Localization
         public bool Rtl { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether the entity is limited/restricted to certain stores
-        /// </summary>
-        public bool LimitedToStores { get; set; }
-        public IList<string> Stores { get; set; }
-
-        /// <summary>
-        /// Gets or sets the identifier of the default currency for this language; 0 is set when we use the default currency display order
-        /// </summary>
-        public string DefaultCurrencyId { get; set; }
-
-        /// <summary>
         /// Gets or sets a value indicating whether the language is published
         /// </summary>
         public bool Published { get; set; }
@@ -58,6 +41,5 @@ namespace ForeverNote.Core.Domain.Localization
         /// Gets or sets the display order
         /// </summary>
         public int DisplayOrder { get; set; }
-        
     }
 }

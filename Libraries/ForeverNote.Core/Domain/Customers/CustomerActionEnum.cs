@@ -19,17 +19,12 @@
     {
         Product = 1,
         Category = 2,
-        Manufacturer = 3,
-        Vendor = 4,
-        ProductAttribute = 5,
-        ProductSpecification = 6,
         CustomerRole = 7,
         CustomerTag = 8,
         CustomerRegisterField = 9,
         CustomCustomerAttribute = 10,
         UrlReferrer = 11,
-        UrlCurrent = 12,
-        Store = 13
+        UrlCurrent = 12
     }
 
     public enum CustomerReactionTypeEnum
@@ -40,6 +35,4 @@
         AssignToCustomerTag = 4,
         InteractiveForm = 5,
     }
-
-    
 }

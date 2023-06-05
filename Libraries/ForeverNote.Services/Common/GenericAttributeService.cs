@@ -43,8 +43,7 @@ namespace ForeverNote.Services.Common
         /// <param name="entityId">EntityId</param>
         /// <param name="key">Key</param>
         /// <param name="value">Value</param>
-        /// <param name="storeId">Store identifier; pass 0 if this attribute will be available for all stores</param>
-        public virtual async Task SaveAttribute<TPropType>(string entity, string entityId, string key, TPropType value, string storeId = "")
+        public virtual async Task SaveAttribute<TPropType>(string entity, string entityId, string key, TPropType value)
         {
             if (string.IsNullOrEmpty(entity))
                 throw new ArgumentNullException("entity");
@@ -55,7 +54,7 @@ namespace ForeverNote.Services.Common
             var collection = _baseRepository.Database.GetCollection<GenericAttributeBaseEntity>(entity);
             var query = _baseRepository.Database.GetCollection<GenericAttributeBaseEntity>(entity).Find(new BsonDocument("_id", entityId)).FirstOrDefault();
 
-            var props = query.GenericAttributes.Where(x => string.IsNullOrEmpty(storeId) || x.StoreId == storeId);
+            var props = query.GenericAttributes;
 
             var prop = props.FirstOrDefault(ga =>
                 ga.Key.Equals(key, StringComparison.OrdinalIgnoreCase)); //should be culture invariant
@@ -68,7 +67,7 @@ namespace ForeverNote.Services.Common
                 {
                     //delete
                     var builder = Builders<GenericAttributeBaseEntity>.Update;
-                    var updatefilter = builder.PullFilter(x => x.GenericAttributes, y => y.Key == prop.Key && y.StoreId == storeId);
+                    var updatefilter = builder.PullFilter(x => x.GenericAttributes, y => y.Key == prop.Key);
                     await collection.UpdateManyAsync(new BsonDocument("_id", entityId), updatefilter);
                 }
                 else
@@ -77,7 +76,7 @@ namespace ForeverNote.Services.Common
                     prop.Value = valueStr;
                     var builder = Builders<GenericAttributeBaseEntity>.Filter;
                     var filter = builder.Eq(x => x.Id, entityId);
-                    filter = filter & builder.Where(x => x.GenericAttributes.Any(y => y.Key == prop.Key && y.StoreId == storeId));
+                    filter = filter & builder.Where(x => x.GenericAttributes.Any(y => y.Key == prop.Key));
                     var update = Builders<GenericAttributeBaseEntity>.Update
                         .Set(x => x.GenericAttributes.ElementAt(-1).Value, prop.Value);
                     await collection.UpdateManyAsync(filter, update);
@@ -88,7 +87,6 @@ namespace ForeverNote.Services.Common
                 prop = new GenericAttribute {
                     Key = key,
                     Value = valueStr,
-                    StoreId = storeId,
                 };
                 var updatebuilder = Builders<GenericAttributeBaseEntity>.Update;
                 var update = updatebuilder.AddToSet(p => p.GenericAttributes, prop);
@@ -103,8 +101,7 @@ namespace ForeverNote.Services.Common
         /// <param name="entity">Entity</param>
         /// <param name="key">Key</param>
         /// <param name="value">Value</param>
-        /// <param name="storeId">Store identifier; pass 0 if this attribute will be available for all stores</param>
-        public virtual async Task SaveAttribute<TPropType>(BaseEntity entity, string key, TPropType value, string storeId = "")
+        public virtual async Task SaveAttribute<TPropType>(BaseEntity entity, string key, TPropType value)
         {
             if (entity == null)
                 throw new ArgumentNullException("entity");
@@ -117,7 +114,7 @@ namespace ForeverNote.Services.Common
             var collection = _baseRepository.Database.GetCollection<GenericAttributeBaseEntity>(keyGroup);
             var query = _baseRepository.Database.GetCollection<GenericAttributeBaseEntity>(keyGroup).Find(new BsonDocument("_id", entity.Id)).FirstOrDefault();
 
-            var props = query.GenericAttributes.Where(x => string.IsNullOrEmpty(storeId) || x.StoreId == storeId);
+            var props = query.GenericAttributes;
 
             var prop = props.FirstOrDefault(ga =>
                 ga.Key.Equals(key, StringComparison.OrdinalIgnoreCase)); //should be culture invariant
@@ -130,9 +127,9 @@ namespace ForeverNote.Services.Common
                 {
                     //delete
                     var builder = Builders<GenericAttributeBaseEntity>.Update;
-                    var updatefilter = builder.PullFilter(x => x.GenericAttributes, y => y.Key == prop.Key && y.StoreId == storeId);
+                    var updatefilter = builder.PullFilter(x => x.GenericAttributes, y => y.Key == prop.Key);
                     await collection.UpdateManyAsync(new BsonDocument("_id", entity.Id), updatefilter);
-                    var entityProp = entity.GenericAttributes.FirstOrDefault(x => x.Key == prop.Key && x.StoreId == storeId);
+                    var entityProp = entity.GenericAttributes.FirstOrDefault(x => x.Key == prop.Key);
                     if (entityProp != null)
                         entity.GenericAttributes.Remove(entityProp);
                 }
@@ -142,13 +139,13 @@ namespace ForeverNote.Services.Common
                     prop.Value = valueStr;
                     var builder = Builders<GenericAttributeBaseEntity>.Filter;
                     var filter = builder.Eq(x => x.Id, entity.Id);
-                    filter = filter & builder.Where(x => x.GenericAttributes.Any(y => y.Key == prop.Key && y.StoreId == storeId));
+                    filter = filter & builder.Where(x => x.GenericAttributes.Any(y => y.Key == prop.Key));
                     var update = Builders<GenericAttributeBaseEntity>.Update
                         .Set(x => x.GenericAttributes.ElementAt(-1).Value, prop.Value);
 
                     await collection.UpdateManyAsync(filter, update);
 
-                    var entityProp = entity.GenericAttributes.FirstOrDefault(x => x.Key == prop.Key && x.StoreId == storeId);
+                    var entityProp = entity.GenericAttributes.FirstOrDefault(x => x.Key == prop.Key);
                     if (entityProp != null)
                         entityProp.Value = valueStr;
 
@@ -161,7 +158,6 @@ namespace ForeverNote.Services.Common
                     prop = new GenericAttribute {
                         Key = key,
                         Value = valueStr,
-                        StoreId = storeId,
                     };
                     var updatebuilder = Builders<GenericAttributeBaseEntity>.Update;
                     var update = updatebuilder.AddToSet(p => p.GenericAttributes, prop);
@@ -171,7 +167,7 @@ namespace ForeverNote.Services.Common
             }
         }
 
-        public virtual async Task<TPropType> GetAttributesForEntity<TPropType>(BaseEntity entity, string key, string storeId = "")
+        public virtual async Task<TPropType> GetAttributesForEntity<TPropType>(BaseEntity entity, string key)
         {
             if (entity == null)
                 throw new ArgumentNullException("entity");
@@ -182,7 +178,7 @@ namespace ForeverNote.Services.Common
             var props = collection.FirstOrDefault().GenericAttributes;
             if (props == null)
                 return default(TPropType);
-            props = props.Where(x => x.StoreId == storeId).ToList();
+            props = props.ToList();
             if (!props.Any())
                 return default(TPropType);
 

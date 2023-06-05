@@ -96,8 +96,6 @@ namespace ForeverNote.Services.ExportImport.Tests
                 CaptureTransactionResult = "CaptureTransactionResult1",
                 SubscriptionTransactionId = "SubscriptionTransactionId1",
                 PaidDateUtc= new DateTime(2010, 01, 01),
-                BillingAddress = GetTestBillingAddress(),
-                ShippingAddress = GetTestShippingAddress(),
                 ShippingMethod = "ShippingMethod1",
                 ShippingRateComputationMethodSystemName="ShippingRateComputationMethodSystemName1",
                 Deleted = false,
@@ -105,38 +103,6 @@ namespace ForeverNote.Services.ExportImport.Tests
             }
             };
             string fileName = Path.GetTempFileName();
-        }
-
-        protected Address GetTestBillingAddress() {
-            return new Address {
-                FirstName = "FirstName 1",
-                LastName = "LastName 1",
-                Email = "Email 1",
-                Company = "Company 1",
-                City = "City 1",
-                Address1 = "Address1a",
-                Address2 = "Address1a",
-                ZipPostalCode = "ZipPostalCode 1",
-                PhoneNumber = "PhoneNumber 1",
-                FaxNumber = "FaxNumber 1",
-                CreatedOnUtc = new DateTime(2010, 01, 01),
-            };
-        }
-
-        protected Address GetTestShippingAddress() {
-            return new Address {
-                FirstName = "FirstName 2",
-                LastName = "LastName 2",
-                Email = "Email 2",
-                Company = "Company 2",
-                City = "City 2",
-                Address1 = "Address2a",
-                Address2 = "Address2b",
-                ZipPostalCode = "ZipPostalCode 2",
-                PhoneNumber = "PhoneNumber 2",
-                FaxNumber = "FaxNumber 2",
-                CreatedOnUtc = new DateTime(2010, 01, 01),
-            };
         }
 
         protected Country GetTestCountry() {

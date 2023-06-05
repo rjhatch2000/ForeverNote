@@ -36,22 +36,17 @@ namespace ForeverNote.Services.Configuration
         /// Get setting by key
         /// </summary>
         /// <param name="key">Key</param>
-        /// <param name="storeId">Store identifier</param>
-        /// <param name="loadSharedValueIfNotFound">A value indicating whether a shared (for all stores) value should be loaded if a value specific for a certain is not found</param>
         /// <returns>Setting</returns>
-        Setting GetSetting(string key, string storeId = "", bool loadSharedValueIfNotFound = false);
+        Setting GetSetting(string key);
 
         /// <summary>
         /// Get setting value by key
         /// </summary>
         /// <typeparam name="T">Type</typeparam>
         /// <param name="key">Key</param>
-        /// <param name="storeId">Store identifier</param>
         /// <param name="defaultValue">Default value</param>
-        /// <param name="loadSharedValueIfNotFound">A value indicating whether a shared (for all stores) value should be loaded if a value specific for a certain is not found</param>
         /// <returns>Setting value</returns>
-        T GetSettingByKey<T>(string key, T defaultValue = default(T), 
-            string storeId = "", bool loadSharedValueIfNotFound = false);
+        T GetSettingByKey<T>(string key, T defaultValue = default(T));
         
         /// <summary>
         /// Set setting value
@@ -59,9 +54,8 @@ namespace ForeverNote.Services.Configuration
         /// <typeparam name="T">Type</typeparam>
         /// <param name="key">Key</param>
         /// <param name="value">Value</param>
-        /// <param name="storeId">Store identifier</param>
         /// <param name="clearCache">A value indicating whether to clear cache after setting update</param>
-        Task SetSetting<T>(string key, T value, string storeId = "", bool clearCache = true);
+        Task SetSetting<T>(string key, T value, bool clearCache = true);
 
         /// <summary>
         /// Gets all settings
@@ -76,34 +70,30 @@ namespace ForeverNote.Services.Configuration
         /// <typeparam name="TPropType">Property type</typeparam>
         /// <param name="settings">Settings</param>
         /// <param name="keySelector">Key selector</param>
-        /// <param name="storeId">Store identifier</param>
         /// <returns>true -setting exists; false - does not exist</returns>
         bool SettingExists<T, TPropType>(T settings, 
-            Expression<Func<T, TPropType>> keySelector, string storeId = "")
+            Expression<Func<T, TPropType>> keySelector)
             where T : ISettings, new();
 
         /// <summary>
         /// Load settings
         /// </summary>
         /// <typeparam name="T">Type</typeparam>
-        /// <param name="storeId">Store identifier for which settigns should be loaded</param>
-        T LoadSetting<T>(string storeId = "") where T : ISettings, new();
+        T LoadSetting<T>() where T : ISettings, new();
 
         /// <summary>
         /// Load settings
         /// </summary>
         /// <param name="type"></param>
-        /// <param name="storeId"></param>
         /// <returns></returns>
-        ISettings LoadSetting(Type type, string storeId = "");
+        ISettings LoadSetting(Type type);
 
         /// <summary>
         /// Save settings object
         /// </summary>
         /// <typeparam name="T">Type</typeparam>
-        /// <param name="storeId">Store identifier</param>
         /// <param name="settings">Setting instance</param>
-        Task SaveSetting<T>(T settings, string storeId = "") where T : ISettings, new();
+        Task SaveSetting<T>(T settings) where T : ISettings, new();
         
         /// <summary>
         /// Save settings object
@@ -112,11 +102,10 @@ namespace ForeverNote.Services.Configuration
         /// <typeparam name="TPropType">Property type</typeparam>
         /// <param name="settings">Settings</param>
         /// <param name="keySelector">Key selector</param>
-        /// <param name="storeId">Store ID</param>
         /// <param name="clearCache">A value indicating whether to clear cache after setting update</param>
         Task SaveSetting<T, TPropType>(T settings,
             Expression<Func<T, TPropType>> keySelector,
-            string storeId = "", bool clearCache = true) where T : ISettings, new();
+            bool clearCache = true) where T : ISettings, new();
 
         /// <summary>
         /// Delete all settings
@@ -131,9 +120,8 @@ namespace ForeverNote.Services.Configuration
         /// <typeparam name="TPropType">Property type</typeparam>
         /// <param name="settings">Settings</param>
         /// <param name="keySelector">Key selector</param>
-        /// <param name="storeId">Store ID</param>
         Task DeleteSetting<T, TPropType>(T settings,
-            Expression<Func<T, TPropType>> keySelector, string storeId = "") where T : ISettings, new();
+            Expression<Func<T, TPropType>> keySelector) where T : ISettings, new();
 
         /// <summary>
         /// Clear cache

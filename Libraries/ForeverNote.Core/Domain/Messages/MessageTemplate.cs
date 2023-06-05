@@ -1,5 +1,4 @@
 ﻿using ForeverNote.Core.Domain.Localization;
-using ForeverNote.Core.Domain.Stores;
 using System.Collections.Generic;
 
 namespace ForeverNote.Core.Domain.Messages
@@ -7,11 +6,10 @@ namespace ForeverNote.Core.Domain.Messages
     /// <summary>
     /// Represents a message template
     /// </summary>
-    public partial class MessageTemplate : BaseEntity, ILocalizedEntity, IStoreMappingSupported
+    public partial class MessageTemplate : BaseEntity, ILocalizedEntity
     {
         public MessageTemplate()
         {
-            Stores = new List<string>();
             Locales = new List<LocalizedProperty>();
         }
         /// <summary>
@@ -58,12 +56,6 @@ namespace ForeverNote.Core.Domain.Messages
         /// Gets or sets the used email account identifier
         /// </summary>
         public string EmailAccountId { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether the entity is limited/restricted to certain stores
-        /// </summary>
-        public bool LimitedToStores { get; set; }
-        public IList<string> Stores { get; set; }
 
         /// <summary>
         /// Gets or sets the period of message delay

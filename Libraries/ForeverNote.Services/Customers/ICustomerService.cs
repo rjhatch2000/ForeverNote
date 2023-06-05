@@ -1,8 +1,5 @@
 using ForeverNote.Core;
-using ForeverNote.Core.Domain.Common;
 using ForeverNote.Core.Domain.Customers;
-using ForeverNote.Core.Domain.Orders;
-using ForeverNote.Core.Domain.Stores;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -21,9 +18,6 @@ namespace ForeverNote.Services.Customers
         /// </summary>
         /// <param name="createdFromUtc">Created date from (UTC); null to load all records</param>
         /// <param name="createdToUtc">Created date to (UTC); null to load all records</param>
-        /// <param name="affiliateId">Affiliate identifier</param>
-        /// <param name="vendorId">Vendor identifier</param>
-        /// <param name="storeId">Store identifier</param>
         /// <param name="customerRoleIds">A list of customer role identifiers to filter by (at least one match); pass null or empty list in order to load all customers; </param>
         /// <param name="email">Email; null to load all customers</param>
         /// <param name="username">Username; null to load all customers</param>
@@ -34,17 +28,14 @@ namespace ForeverNote.Services.Customers
         /// <param name="company">Company; null to load all customers</param>
         /// <param name="phone">Phone; null to load all customers</param>
         /// <param name="zipPostalCode">Phone; null to load all customers</param>
-        /// <param name="loadOnlyWithShoppingCart">Value indicating whether to load customers only with shopping cart</param>
-        /// <param name="sct">Value indicating what shopping cart type to filter; userd when 'loadOnlyWithShoppingCart' param is 'true'</param>
         /// <param name="pageIndex">Page index</param>
         /// <param name="pageSize">Page size</param>
         /// <returns>Customers</returns>
         Task<IPagedList<Customer>> GetAllCustomers(DateTime? createdFromUtc = null,
-            DateTime? createdToUtc = null, string affiliateId = "", string vendorId = "", string storeId = "",
+            DateTime? createdToUtc = null,
             string[] customerRoleIds = null, string[] customerTagIds = null, string email = null, string username = null,
             string firstName = null, string lastName = null,
             string company = null, string phone = null, string zipPostalCode = null,
-            bool loadOnlyWithShoppingCart = false, ShoppingCartType? sct = null,
             int pageIndex = 0, int pageSize = int.MaxValue); //Int32.MaxValue
 
         /// <summary>
@@ -63,9 +54,7 @@ namespace ForeverNote.Services.Customers
         /// <param name="pageSize">Page size</param>
         /// <returns>Customers</returns>
         Task<IPagedList<Customer>> GetOnlineCustomers(DateTime lastActivityFromUtc,
-            string[] customerRoleIds, int pageIndex = 0, int pageSize = int.MaxValue, string storeId = "");
-
-        Task<int> GetCountOnlineShoppingCart(DateTime lastActivityFromUtc, string storeId);
+            string[] customerRoleIds, int pageIndex = 0, int pageSize = int.MaxValue);
 
         /// <summary>
         /// Delete a customer
@@ -119,7 +108,7 @@ namespace ForeverNote.Services.Customers
         /// Insert a guest customer
         /// </summary>
         /// <returns>Customer</returns>
-        Task<Customer> InsertGuestCustomer(Store store, string urlreferrer = "");
+        Task<Customer> InsertGuestCustomer(string urlreferrer = "");
 
         /// <summary>
         /// Insert a customer
@@ -143,14 +132,7 @@ namespace ForeverNote.Services.Customers
         /// Updates the customer
         /// </summary>
         /// <param name="customer">Customer</param>
-        Task UpdateCustomerVendor(Customer customer);
-
-        /// <summary>
-        /// Updates the customer
-        /// </summary>
-        /// <param name="customer">Customer</param>
         Task UpdateCustomerPassword(Customer customer);
-
 
         /// <summary>
         /// Update free shipping
@@ -158,12 +140,6 @@ namespace ForeverNote.Services.Customers
         /// <param name="customerId"></param>
         /// <param name="freeShipping"></param>
         Task UpdateFreeShipping(string customerId, bool freeShipping);
-
-        /// <summary>
-        /// Updates the customer
-        /// </summary>
-        /// <param name="customer">Customer</param>
-        Task UpdateAffiliate(Customer customer);
 
         /// <summary>
         /// Updates the customer
@@ -211,28 +187,12 @@ namespace ForeverNote.Services.Customers
         Task UpdateCustomerinAdminPanel(Customer customer);
 
         /// <summary>
-        /// Reset data required for checkout
-        /// </summary>
-        /// <param name="customer">Customer</param>
-        /// <param name="storeId">Store identifier</param>
-        /// <param name="clearCouponCodes">A value indicating whether to clear coupon code</param>
-        /// <param name="clearCheckoutAttributes">A value indicating whether to clear selected checkout attributes</param>
-        /// <param name="clearRewardPoints">A value indicating whether to clear "Use reward points" flag</param>
-        /// <param name="clearShippingMethod">A value indicating whether to clear selected shipping method</param>
-        /// <param name="clearPaymentMethod">A value indicating whether to clear selected payment method</param>
-        Task ResetCheckoutData(Customer customer, string storeId,
-            bool clearCouponCodes = false, bool clearCheckoutAttributes = false,
-            bool clearRewardPoints = true, bool clearShippingMethod = true,
-            bool clearPaymentMethod = true);
-        
-        /// <summary>
         /// Delete guest customer records
         /// </summary>
         /// <param name="createdFromUtc">Created date from (UTC); null to load all records</param>
         /// <param name="createdToUtc">Created date to (UTC); null to load all records</param>
-        /// <param name="onlyWithoutShoppingCart">A value indicating whether to delete customers only without shopping cart</param>
         /// <returns>Number of deleted customers</returns>
-        Task<int> DeleteGuestCustomers(DateTime? createdFromUtc, DateTime? createdToUtc, bool onlyWithoutShoppingCart);
+        Task<int> DeleteGuestCustomers(DateTime? createdFromUtc, DateTime? createdToUtc);
 
         #endregion
 
@@ -345,25 +305,6 @@ namespace ForeverNote.Services.Customers
 
         Task DeleteCustomerRoleInCustomer(CustomerRole customerRole);
 
-        #endregion
-
-        #region Customer address
-
-        Task DeleteAddress(Address address);
-        Task InsertAddress(Address address);
-        Task UpdateAddress(Address address);
-        Task UpdateBillingAddress(Address address);
-        Task UpdateShippingAddress(Address address);
-        Task RemoveShippingAddress(string customerId);
-
-        #endregion
-
-        #region Shopping cart 
-
-        Task ClearShoppingCartItem(string customerId, IList<ShoppingCartItem> cart);
-        Task DeleteShoppingCartItem(string customerId, ShoppingCartItem shoppingCartItem);
-        Task InsertShoppingCartItem(string customerId, ShoppingCartItem shoppingCartItem);
-        Task UpdateShoppingCartItem(string customerId, ShoppingCartItem shoppingCartItem);
         #endregion
 
         #region Customer note

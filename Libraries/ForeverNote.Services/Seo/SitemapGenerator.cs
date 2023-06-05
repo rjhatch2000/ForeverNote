@@ -1,15 +1,9 @@
 using ForeverNote.Core;
-using ForeverNote.Core.Domain.Blogs;
 using ForeverNote.Core.Domain.Catalog;
 using ForeverNote.Core.Domain.Common;
-using ForeverNote.Core.Domain.Forums;
-using ForeverNote.Core.Domain.Knowledgebase;
-using ForeverNote.Core.Domain.News;
-using ForeverNote.Services.Blogs;
 using ForeverNote.Services.Catalog;
 using ForeverNote.Services.Helpers;
 using ForeverNote.Services.Media;
-using ForeverNote.Services.Topics;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -39,51 +33,29 @@ namespace ForeverNote.Services.Seo
 
         #region Fields
 
-        private readonly IStoreContext _storeContext;
         private readonly ICategoryService _categoryService;
         private readonly IProductService _productService;
-        private readonly IManufacturerService _manufacturerService;
-        private readonly ITopicService _topicService;
-        private readonly IBlogService _blogService;
         private readonly IPictureService _pictureService;
         private readonly IWebHelper _webHelper;
         private readonly CommonSettings _commonSettings;
-        private readonly BlogSettings _blogSettings;
-        private readonly KnowledgebaseSettings _knowledgebaseSettings;
-        private readonly NewsSettings _newsSettings;
-        private readonly ForumSettings _forumSettings;
 
         #endregion
 
         #region Ctor
 
-        public SitemapGenerator(IStoreContext storeContext,
+        public SitemapGenerator(
             ICategoryService categoryService,
             IProductService productService,
-            IManufacturerService manufacturerService,
-            ITopicService topicService,
-            IBlogService blogService,
             IPictureService pictureService,
             IWebHelper webHelper,
-            CommonSettings commonSettings,
-            BlogSettings blogSettings,
-            KnowledgebaseSettings knowledgebaseSettings,
-            NewsSettings newsSettings,
-            ForumSettings forumSettings)
+            CommonSettings commonSettings
+        )
         {
-            _storeContext = storeContext;
             _categoryService = categoryService;
             _productService = productService;
-            _manufacturerService = manufacturerService;
-            _topicService = topicService;
-            _blogService = blogService;
             _pictureService = pictureService;
             _webHelper = webHelper;
             _commonSettings = commonSettings;
-            _blogSettings = blogSettings;
-            _knowledgebaseSettings = knowledgebaseSettings;
-            _newsSettings = newsSettings;
-            _forumSettings = forumSettings;
         }
 
         #endregion
@@ -158,51 +130,13 @@ namespace ForeverNote.Services.Seo
             var contactUsUrl = urlHelper.RouteUrl("ContactUs", null, GetHttpProtocol());
             sitemapUrls.Add(new SitemapUrl(contactUsUrl, string.Empty, UpdateFrequency.Weekly, DateTime.UtcNow));
 
-            //news
-            if (_newsSettings.Enabled)
-            {
-                var url = urlHelper.RouteUrl("NewsArchive", null, GetHttpProtocol());
-                sitemapUrls.Add(new SitemapUrl(url, string.Empty, UpdateFrequency.Weekly, DateTime.UtcNow));
-            }
-
-            //blog
-            if (_blogSettings.Enabled)
-            {
-                var url = urlHelper.RouteUrl("Blog", null, GetHttpProtocol());
-                sitemapUrls.Add(new SitemapUrl(url, string.Empty, UpdateFrequency.Weekly, DateTime.UtcNow));
-            }
-
-            //knowledgebase
-            if (_knowledgebaseSettings.Enabled)
-            {
-                var url = urlHelper.RouteUrl("Knowledgebase", null, GetHttpProtocol());
-                sitemapUrls.Add(new SitemapUrl(url, string.Empty, UpdateFrequency.Weekly, DateTime.UtcNow));
-            }
-
-            //forums
-            if (_forumSettings.ForumsEnabled)
-            {
-                var url = urlHelper.RouteUrl("Boards", null, GetHttpProtocol());
-                sitemapUrls.Add(new SitemapUrl(url, string.Empty, UpdateFrequency.Weekly, DateTime.UtcNow));
-            }
-
             //categories
             if (_commonSettings.SitemapIncludeCategories)
                 sitemapUrls.AddRange(await GetCategoryUrls(urlHelper, "", language));
 
-            //manufacturers
-            if (_commonSettings.SitemapIncludeManufacturers)
-                sitemapUrls.AddRange(await GetManufacturerUrls(urlHelper, language));
-
             //products
             if (_commonSettings.SitemapIncludeProducts)
                 sitemapUrls.AddRange(await GetProductUrls(urlHelper, language));
-
-            //topics
-            sitemapUrls.AddRange(await GetTopicUrls(urlHelper, language));
-
-            //blog posts
-            sitemapUrls.AddRange(await GetBlogPostsUrls(urlHelper, language));
 
             //custom URLs
             sitemapUrls.AddRange(GetCustomUrls());
@@ -223,7 +157,7 @@ namespace ForeverNote.Services.Seo
             var storeLocation = _webHelper.GetStoreLocation();
             foreach (var category in allCategoriesByParentCategoryId)
             {
-                var url = urlHelper.RouteUrl("Category", new { SeName = category.GetSeName(language) }, GetHttpProtocol());
+                var url = urlHelper.RouteUrl("Category", new { }, GetHttpProtocol());
                 var imageurl = string.Empty;
                 if(_commonSettings.SitemapIncludeImage)
                 {
@@ -239,45 +173,18 @@ namespace ForeverNote.Services.Seo
         }
 
         /// <summary>
-        /// Get manufacturer URLs for the sitemap
-        /// </summary>
-        /// <param name="urlHelper">URL helper</param>
-        /// <returns>Collection of sitemap URLs</returns>
-        protected virtual async Task<IEnumerable<SitemapUrl>> GetManufacturerUrls(IUrlHelper urlHelper, string language)
-        {
-            var manuf = await _manufacturerService.GetAllManufacturers(storeId: _storeContext.CurrentStore.Id);
-            var manufactures = new List<SitemapUrl>();
-            var storeLocation = _webHelper.GetStoreLocation();
-            foreach (var manufacturer in manuf)
-            {
-                var url = urlHelper.RouteUrl("Manufacturer", new { SeName = manufacturer.GetSeName(language) }, GetHttpProtocol());
-                var imageurl = string.Empty;
-                if (_commonSettings.SitemapIncludeImage)
-                {
-                    if (!string.IsNullOrEmpty(manufacturer.PictureId))
-                    {
-                        imageurl = await _pictureService.GetPictureUrl(manufacturer.PictureId, showDefaultPicture: false, storeLocation: storeLocation);
-                    }
-                }
-                manufactures.Add(new SitemapUrl(url, imageurl, UpdateFrequency.Weekly, manufacturer.UpdatedOnUtc));
-            }
-            return manufactures;
-        }
-
-        /// <summary>
         /// Get product URLs for the sitemap
         /// </summary>
         /// <param name="urlHelper">URL helper</param>
         /// <returns>Collection of sitemap URLs</returns>
         protected virtual async Task<IEnumerable<SitemapUrl>> GetProductUrls(IUrlHelper urlHelper, string language)
         {
-            var search = await _productService.SearchProducts(storeId: _storeContext.CurrentStore.Id,
-                visibleIndividuallyOnly: true, orderBy: ProductSortingEnum.CreatedOn);
+            var search = await _productService.SearchProducts(orderBy: ProductSortingEnum.CreatedOn);
             var storeLocation = _webHelper.GetStoreLocation();
             var products = new List<SitemapUrl>();
             foreach (var product in search.products)
             {
-                var url = urlHelper.RouteUrl("Product", new { SeName = product.GetSeName(language) }, GetHttpProtocol());
+                var url = urlHelper.RouteUrl("Product", new { }, GetHttpProtocol());
                 var imageurl = string.Empty;
                 if (_commonSettings.SitemapIncludeImage)
                 {
@@ -290,48 +197,6 @@ namespace ForeverNote.Services.Seo
             }
             return products;
             
-        }
-
-        /// <summary>
-        /// Get topic URLs for the sitemap
-        /// </summary>
-        /// <param name="urlHelper">URL helper</param>
-        /// <returns>Collection of sitemap URLs</returns>
-        protected virtual async Task<IEnumerable<SitemapUrl>> GetTopicUrls(IUrlHelper urlHelper, string language)
-        {
-            var topics = await _topicService.GetAllTopics(_storeContext.CurrentStore.Id);
-            return topics.Where(t => t.IncludeInSitemap).Select(topic =>
-            {
-                var url = urlHelper.RouteUrl("Topic", new { SeName = topic.GetSeName(language) }, GetHttpProtocol());
-                return new SitemapUrl(url, string.Empty, UpdateFrequency.Weekly, DateTime.UtcNow);
-            });
-        }
-
-        /// <summary>
-        /// Get blog posts URLs for the sitemap
-        /// </summary>
-        /// <param name="urlHelper">URL helper</param>
-        /// <returns>Collection of sitemap URLs</returns>
-        protected virtual async Task<IEnumerable<SitemapUrl>> GetBlogPostsUrls(IUrlHelper urlHelper, string language)
-        {
-            var blogposts = await _blogService.GetAllBlogPosts(_storeContext.CurrentStore.Id);
-            var blog = new List<SitemapUrl>();
-            var storeLocation = _webHelper.GetStoreLocation();
-            foreach (var blogpost in blogposts)
-            {
-                var url = urlHelper.RouteUrl("BlogPost", new { SeName = blogpost.GetSeName(language) }, GetHttpProtocol());
-                var imageurl = string.Empty;
-                if (_commonSettings.SitemapIncludeImage)
-                {
-                    if (!string.IsNullOrEmpty(blogpost.PictureId))
-                    {
-                        imageurl = await _pictureService.GetPictureUrl(blogpost.PictureId, showDefaultPicture: false, storeLocation: storeLocation);
-                    }
-                }
-                blog.Add(new SitemapUrl(url, imageurl, UpdateFrequency.Weekly, DateTime.UtcNow));
-            }
-            
-            return blog;
         }
 
         /// <summary>

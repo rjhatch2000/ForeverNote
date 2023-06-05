@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using ForeverNote.Core.Caching;
+using ForeverNote.Core.Domain.Common;
 
 namespace ForeverNote.Services.Media
 {
@@ -29,13 +30,12 @@ namespace ForeverNote.Services.Media
         /// </summary>
         /// <remarks>
         /// {0} : picture ID
-        /// {1} : store ID
-        /// {2} : target size
-        /// {3} : showDefaultPicture
-        /// {4} : storeLocation
-        /// {5} : pictureType
+        /// {1} : target size
+        /// {2} : showDefaultPicture
+        /// {3} : storeLocation
+        /// {4} : pictureType
         /// </remarks>
-        private const string PICTURE_BY_KEY = "ForeverNote.picture-{0}-{1}-{2}-{3}-{4}-{5}";
+        private const string PICTURE_BY_KEY = "ForeverNote.picture-{0}-{1}-{2}-{3}-{4}";
 
         #region Const
 
@@ -45,12 +45,12 @@ namespace ForeverNote.Services.Media
 
         #region Fields
 
+        private readonly CommonSettings _commonSettings;
         private readonly IRepository<Picture> _pictureRepository;
         private readonly ISettingService _settingService;
         private readonly ILogger _logger;
         private readonly IMediator _mediator;
         private readonly IWebHostEnvironment _hostingEnvironment;
-        private readonly IStoreContext _storeContext;
         private readonly ICacheManager _cacheManager;
         private readonly MediaSettings _mediaSettings;
 
@@ -69,21 +69,23 @@ namespace ForeverNote.Services.Media
         /// <param name="storeContext">Current store</param>
         /// <param name="cacheManager">Cache manager</param>
         /// <param name="mediaSettings">Media settings</param>
-        public PictureService(IRepository<Picture> pictureRepository,
+        public PictureService(
+            CommonSettings commonSettings,
+            IRepository<Picture> pictureRepository,
             ISettingService settingService,
             ILogger logger,
             IMediator mediator,
             IWebHostEnvironment hostingEnvironment,
-            IStoreContext storeContext,
             ICacheManager cacheManager,
-            MediaSettings mediaSettings)
+            MediaSettings mediaSettings
+        )
         {
+            _commonSettings = commonSettings;
             _pictureRepository = pictureRepository;
             _settingService = settingService;
             _logger = logger;
             _mediator = mediator;
             _hostingEnvironment = hostingEnvironment;
-            _storeContext = storeContext;
             _cacheManager = cacheManager;
             _mediaSettings = mediaSettings;
         }
@@ -194,7 +196,7 @@ namespace ForeverNote.Services.Media
             storeLocation = !string.IsNullOrEmpty(storeLocation)
                                     ? storeLocation
                                     : string.IsNullOrEmpty(_mediaSettings.StoreLocation) ?
-                                    _storeContext.CurrentStore.SslEnabled ? _storeContext.CurrentStore.SecureUrl : _storeContext.CurrentStore.Url :
+                                    _commonSettings.SslEnabled ? _commonSettings.SecureUrl : _commonSettings.Url :
                                     _mediaSettings.StoreLocation;
 
             var url = storeLocation + "content/images/thumbs/";
@@ -283,16 +285,6 @@ namespace ForeverNote.Services.Media
         }
 
         /// <summary>
-        /// Get picture SEO friendly name
-        /// </summary>
-        /// <param name="name">Name</param>
-        /// <returns>Result</returns>
-        public virtual string GetPictureSeName(string name)
-        {
-            return SeoExtensions.GetSeName(name, true, false);
-        }
-
-        /// <summary>
         /// Gets the default picture URL
         /// </summary>
         /// <param name="targetSize">The target picture size (longest side)</param>
@@ -326,7 +318,7 @@ namespace ForeverNote.Services.Media
                 return !string.IsNullOrEmpty(storeLocation)
                         ? storeLocation
                         : string.IsNullOrEmpty(_mediaSettings.StoreLocation) ?
-                        _storeContext.CurrentStore.SslEnabled ? _storeContext.CurrentStore.SecureUrl : _storeContext.CurrentStore.Url :
+                        _commonSettings.SslEnabled ? _commonSettings.SecureUrl : _commonSettings.Url :
                         _mediaSettings.StoreLocation
                         + "content/images/" + defaultImageFileName;
             }
@@ -373,7 +365,7 @@ namespace ForeverNote.Services.Media
             string storeLocation = null,
             PictureType defaultPictureType = PictureType.Entity)
         {
-            var pictureKey = string.Format(PICTURE_BY_KEY, pictureId, _storeContext.CurrentStore?.Id, targetSize, showDefaultPicture, storeLocation, defaultPictureType);
+            var pictureKey = string.Format(PICTURE_BY_KEY, pictureId, targetSize, showDefaultPicture, storeLocation, defaultPictureType);
             return await _cacheManager.GetAsync(pictureKey, async () =>
             {
                 var picture = await GetPictureById(pictureId);

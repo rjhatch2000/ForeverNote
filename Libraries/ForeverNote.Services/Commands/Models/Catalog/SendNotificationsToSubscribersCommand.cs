@@ -8,6 +8,5 @@ namespace ForeverNote.Services.Commands.Models.Catalog
     {
         public Product Product { get; set; }
         public string AttributeXml { get; set; }
-        public string Warehouse { get; set; }
     }
 }

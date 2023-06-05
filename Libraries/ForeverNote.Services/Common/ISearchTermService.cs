@@ -26,9 +26,8 @@ namespace ForeverNote.Services.Common
         /// Gets a search term record by keyword
         /// </summary>
         /// <param name="keyword">Search term keyword</param>
-        /// <param name="storeId">Store identifier</param>
         /// <returns>Search term</returns>
-        Task<SearchTerm> GetSearchTermByKeyword(string keyword, string storeId);
+        Task<SearchTerm> GetSearchTermByKeyword(string keyword);
 
         /// <summary>
         /// Gets a search term statistics

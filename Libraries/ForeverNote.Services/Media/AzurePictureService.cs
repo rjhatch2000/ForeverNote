@@ -2,6 +2,7 @@
 using ForeverNote.Core.Caching;
 using ForeverNote.Core.Configuration;
 using ForeverNote.Core.Data;
+using ForeverNote.Core.Domain.Common;
 using ForeverNote.Core.Domain.Media;
 using ForeverNote.Services.Configuration;
 using ForeverNote.Services.Logging;
@@ -32,23 +33,26 @@ namespace ForeverNote.Services.Media
 
         #region Ctor
 
-        public AzurePictureService(IRepository<Picture> pictureRepository,
+        public AzurePictureService(
+            CommonSettings commonSettings,
+            IRepository<Picture> pictureRepository,
             ISettingService settingService,
             ILogger logger,
             IMediator mediator,
             IWebHostEnvironment hostingEnvironment,
-            IStoreContext storeContext,
             ICacheManager cacheManager,
             MediaSettings mediaSettings,
-            ForeverNoteConfig config)
-            : base(pictureRepository,
+            ForeverNoteConfig config
+        ) : base(
+                commonSettings,
+                pictureRepository,
                 settingService,
                 logger,
                 mediator,
                 hostingEnvironment,
-                storeContext,
                 cacheManager,
-                mediaSettings)
+                mediaSettings
+        )
         {
             _config = config;
 

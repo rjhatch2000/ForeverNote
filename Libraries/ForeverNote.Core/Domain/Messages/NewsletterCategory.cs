@@ -1,10 +1,9 @@
 ﻿using ForeverNote.Core.Domain.Localization;
-using ForeverNote.Core.Domain.Stores;
 using System.Collections.Generic;
 
 namespace ForeverNote.Core.Domain.Messages
 {
-    public partial class NewsletterCategory : BaseEntity, ILocalizedEntity, IStoreMappingSupported
+    public partial class NewsletterCategory : BaseEntity, ILocalizedEntity
     {
         public NewsletterCategory()
         {

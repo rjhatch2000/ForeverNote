@@ -1,11 +1,7 @@
 using ForeverNote.Core;
 using ForeverNote.Core.Caching;
 using ForeverNote.Core.Data;
-using ForeverNote.Core.Domain.Common;
 using ForeverNote.Core.Domain.Customers;
-using ForeverNote.Core.Domain.Orders;
-using ForeverNote.Core.Domain.Shipping;
-using ForeverNote.Core.Domain.Stores;
 using ForeverNote.Services.Common;
 using ForeverNote.Services.Events;
 using MediatR;
@@ -114,11 +110,10 @@ namespace ForeverNote.Services.Customers
         /// <param name="pageSize">Page size</param>
         /// <returns>Customers</returns>
         public virtual async Task<IPagedList<Customer>> GetAllCustomers(DateTime? createdFromUtc = null,
-            DateTime? createdToUtc = null, string affiliateId = "", string vendorId = "", string storeId = "",
+            DateTime? createdToUtc = null,
             string[] customerRoleIds = null, string[] customerTagIds = null, string email = null, string username = null,
             string firstName = null, string lastName = null,
             string company = null, string phone = null, string zipPostalCode = null,
-            bool loadOnlyWithShoppingCart = false, ShoppingCartType? sct = null,
             int pageIndex = 0, int pageSize = 2147483647)
         {
             var query = _customerRepository.Table;
@@ -127,12 +122,6 @@ namespace ForeverNote.Services.Customers
                 query = query.Where(c => createdFromUtc.Value <= c.CreatedOnUtc);
             if (createdToUtc.HasValue)
                 query = query.Where(c => createdToUtc.Value >= c.CreatedOnUtc);
-            if (!string.IsNullOrEmpty(affiliateId))
-                query = query.Where(c => affiliateId == c.AffiliateId);
-            if (!string.IsNullOrEmpty(vendorId))
-                query = query.Where(c => vendorId == c.VendorId);
-            if (!string.IsNullOrEmpty(storeId))
-                query = query.Where(c => c.StoreId == storeId);
 
             query = query.Where(c => !c.Deleted);
             if (customerRoleIds != null && customerRoleIds.Length > 0)
@@ -175,17 +164,6 @@ namespace ForeverNote.Services.Customers
                 query = query.Where(x => x.GenericAttributes.Any(y => y.Key == SystemCustomerAttributeNames.ZipPostalCode && y.Value != null && y.Value.ToLower().Contains(zipPostalCode.ToLower())));
             }
 
-            if (loadOnlyWithShoppingCart)
-            {
-                int? sctId = null;
-                if (sct.HasValue)
-                    sctId = (int)sct.Value;
-
-                query = sct.HasValue ?
-                    query.Where(c => c.ShoppingCartItems.Any(x => x.ShoppingCartTypeId == sctId.Value)) :
-                    query.Where(c => c.ShoppingCartItems.Count() > 0);
-            }
-
             query = query.OrderByDescending(c => c.CreatedOnUtc);
             return await PagedList<Customer>.Create(query, pageIndex, pageSize);
         }
@@ -215,7 +193,7 @@ namespace ForeverNote.Services.Customers
         /// <param name="storeId">Store ident</param>
         /// <returns>Customers</returns>
         public virtual async Task<IPagedList<Customer>> GetOnlineCustomers(DateTime lastActivityFromUtc,
-            string[] customerRoleIds, int pageIndex = 0, int pageSize = int.MaxValue, string storeId = "")
+            string[] customerRoleIds, int pageIndex = 0, int pageSize = int.MaxValue)
         {
             var query = _customerRepository.Table;
             query = query.Where(c => lastActivityFromUtc <= c.LastActivityDateUtc);
@@ -224,24 +202,9 @@ namespace ForeverNote.Services.Customers
             if (customerRoleIds != null && customerRoleIds.Length > 0)
                 query = query.Where(c => c.CustomerRoles.Select(cr => cr.Id).Intersect(customerRoleIds).Any());
 
-            if (!string.IsNullOrEmpty(storeId))
-                query = query.Where(c => c.StoreId == storeId);
-
             query = query.OrderByDescending(c => c.LastActivityDateUtc);
             return await PagedList<Customer>.Create(query, pageIndex, pageSize);
         }
-
-
-        public virtual Task<int> GetCountOnlineShoppingCart(DateTime lastActivityFromUtc, string storeId)
-        {
-            var query = _customerRepository.Table;
-            query = query.Where(c => lastActivityFromUtc <= c.LastUpdateCartDateUtc);
-            if (!string.IsNullOrEmpty(storeId))
-                query = query.Where(c => c.StoreId == storeId);
-
-            return query.CountAsync();
-        }
-
 
         /// <summary>
         /// Delete a customer
@@ -259,14 +222,8 @@ namespace ForeverNote.Services.Customers
             customer.Email = $"DELETED@{DateTime.UtcNow.Ticks}.COM";
             customer.Username = customer.Email;
 
-            //delete address
-            customer.Addresses.Clear();
-            customer.BillingAddress = null;
-            customer.ShippingAddress = null;
             //delete generic attr
             customer.GenericAttributes.Clear();
-            //delete shopping cart
-            customer.ShoppingCartItems.Clear();
             //delete customer roles
             customer.CustomerRoles.Clear();
             //clear customer tags
@@ -373,12 +330,11 @@ namespace ForeverNote.Services.Customers
         /// Insert a guest customer
         /// </summary>
         /// <returns>Customer</returns>
-        public virtual async Task<Customer> InsertGuestCustomer(Store store, string urlreferrer = "")
+        public virtual async Task<Customer> InsertGuestCustomer(string urlreferrer = "")
         {
             var customer = new Customer {
                 CustomerGuid = Guid.NewGuid(),
                 Active = true,
-                StoreId = store.Id,
                 CreatedOnUtc = DateTime.UtcNow,
                 LastActivityDateUtc = DateTime.UtcNow,
                 UrlReferrer = urlreferrer
@@ -469,7 +425,6 @@ namespace ForeverNote.Services.Customers
                 .Set(x => x.PasswordFormatId, customer.PasswordFormatId)
                 .Set(x => x.PasswordSalt, customer.PasswordSalt)
                 .Set(x => x.Active, customer.Active)
-                .Set(x => x.StoreId, customer.StoreId)
                 .Set(x => x.Password, customer.Password)
                 .Set(x => x.PasswordChangeDateUtc, customer.PasswordChangeDateUtc)
                 .Set(x => x.Username, string.IsNullOrEmpty(customer.Username) ? "" : customer.Username.ToLower())
@@ -515,24 +470,7 @@ namespace ForeverNote.Services.Customers
             await _customerRepository.Collection.UpdateOneAsync(filter, update);
 
         }
-        /// Updates the customer - last activity date
-        /// </summary>
-        /// <param name="customer">Customer</param>
-        public virtual async Task UpdateCustomerVendor(Customer customer)
-        {
-            if (customer == null)
-                throw new ArgumentNullException("customer");
-
-            var builder = Builders<Customer>.Filter;
-            var filter = builder.Eq(x => x.Id, customer.Id);
-            var update = Builders<Customer>.Update
-                .Set(x => x.VendorId, customer.VendorId);
-
-            await _customerRepository.Collection.UpdateOneAsync(filter, update);
-
-            //event notification
-            await _mediator.EntityUpdated(customer);
-        }
+        
         /// <summary>
         /// Updates the customer - last activity date
         /// </summary>
@@ -575,7 +513,6 @@ namespace ForeverNote.Services.Customers
             var update = Builders<Customer>.Update
                 .Set(x => x.Active, customer.Active)
                 .Set(x => x.AdminComment, customer.AdminComment)
-                .Set(x => x.AffiliateId, customer.AffiliateId)
                 .Set(x => x.IsSystemAccount, customer.IsSystemAccount)
                 .Set(x => x.Active, customer.Active)
                 .Set(x => x.Email, string.IsNullOrEmpty(customer.Email) ? "" : customer.Email.ToLower())
@@ -584,9 +521,7 @@ namespace ForeverNote.Services.Customers
                 .Set(x => x.SystemName, customer.SystemName)
                 .Set(x => x.Username, string.IsNullOrEmpty(customer.Username) ? "" : customer.Username.ToLower())
                 .Set(x => x.CustomerRoles, customer.CustomerRoles)
-                .Set(x => x.Addresses, customer.Addresses)
                 .Set(x => x.FreeShipping, customer.FreeShipping)
-                .Set(x => x.VendorId, customer.VendorId)
                 .Set(x => x.StaffStoreId, customer.StaffStoreId);
 
             await _customerRepository.Collection.UpdateOneAsync(filter, update);
@@ -604,19 +539,6 @@ namespace ForeverNote.Services.Customers
             await _customerRepository.Collection.UpdateOneAsync(filter, update);
         }
 
-        public virtual async Task UpdateAffiliate(Customer customer)
-        {
-            if (customer == null)
-                throw new ArgumentNullException("customer");
-
-            var builder = Builders<Customer>.Filter;
-            var filter = builder.Eq(x => x.Id, customer.Id);
-            var update = Builders<Customer>.Update
-                .Set(x => x.AffiliateId, customer.AffiliateId);
-
-            await _customerRepository.Collection.UpdateOneAsync(filter, update);
-        }
-
         public virtual async Task UpdateActive(Customer customer)
         {
             if (customer == null)
@@ -624,8 +546,7 @@ namespace ForeverNote.Services.Customers
             var builder = Builders<Customer>.Filter;
             var filter = builder.Eq(x => x.Id, customer.Id);
             var update = Builders<Customer>.Update
-                .Set(x => x.Active, customer.Active)
-                .Set(x => x.StoreId, customer.StoreId);
+                .Set(x => x.Active, customer.Active);
 
             await _customerRepository.Collection.UpdateOneAsync(filter, update);
         }
@@ -669,67 +590,13 @@ namespace ForeverNote.Services.Customers
         }
 
         /// <summary>
-        /// Reset data required for checkout
-        /// </summary>
-        /// <param name="customer">Customer</param>
-        /// <param name="storeId">Store identifier</param>
-        /// <param name="clearCouponCodes">A value indicating whether to clear coupon code</param>
-        /// <param name="clearCheckoutAttributes">A value indicating whether to clear selected checkout attributes</param>
-        /// <param name="clearRewardPoints">A value indicating whether to clear "Use reward points" flag</param>
-        /// <param name="clearShippingMethod">A value indicating whether to clear selected shipping method</param>
-        /// <param name="clearPaymentMethod">A value indicating whether to clear selected payment method</param>
-        public virtual async Task ResetCheckoutData(Customer customer, string storeId,
-            bool clearCouponCodes = false, bool clearCheckoutAttributes = false,
-            bool clearRewardPoints = true, bool clearShippingMethod = true,
-            bool clearPaymentMethod = true)
-        {
-            if (customer == null)
-                throw new ArgumentNullException();
-
-            //clear entered coupon codes
-            if (clearCouponCodes)
-            {
-                await _genericAttributeService.SaveAttribute<string>(customer, SystemCustomerAttributeNames.DiscountCoupons, null);
-                await _genericAttributeService.SaveAttribute<string>(customer, SystemCustomerAttributeNames.GiftCardCoupons, null);
-            }
-
-            //clear checkout attributes
-            if (clearCheckoutAttributes)
-            {
-                await _genericAttributeService.SaveAttribute<string>(customer, SystemCustomerAttributeNames.CheckoutAttributes, null, storeId);
-            }
-
-            //clear reward points flag
-            if (clearRewardPoints)
-            {
-                await _genericAttributeService.SaveAttribute(customer, SystemCustomerAttributeNames.UseRewardPointsDuringCheckout, false, storeId);
-            }
-
-            //clear selected shipping method
-            if (clearShippingMethod)
-            {
-                await _genericAttributeService.SaveAttribute<ShippingOption>(customer, SystemCustomerAttributeNames.SelectedShippingOption, null, storeId);
-                await _genericAttributeService.SaveAttribute<ShippingOption>(customer, SystemCustomerAttributeNames.OfferedShippingOptions, null, storeId);
-                await _genericAttributeService.SaveAttribute(customer, SystemCustomerAttributeNames.SelectedPickupPoint, "", storeId);
-                await _genericAttributeService.SaveAttribute(customer, SystemCustomerAttributeNames.ShippingOptionAttributeDescription, "", storeId);
-                await _genericAttributeService.SaveAttribute(customer, SystemCustomerAttributeNames.ShippingOptionAttributeXml, "", storeId);
-            }
-
-            //clear selected payment method
-            if (clearPaymentMethod)
-            {
-                await _genericAttributeService.SaveAttribute<string>(customer, SystemCustomerAttributeNames.SelectedPaymentMethod, null, storeId);
-            }
-        }
-
-        /// <summary>
         /// Delete guest customer records
         /// </summary>
         /// <param name="createdFromUtc">Created date from (UTC); null to load all records</param>
         /// <param name="createdToUtc">Created date to (UTC); null to load all records</param>
         /// <param name="onlyWithoutShoppingCart">A value indicating whether to delete customers only without shopping cart</param>
         /// <returns>Number of deleted customers</returns>
-        public virtual async Task<int> DeleteGuestCustomers(DateTime? createdFromUtc, DateTime? createdToUtc, bool onlyWithoutShoppingCart)
+        public virtual async Task<int> DeleteGuestCustomers(DateTime? createdFromUtc, DateTime? createdToUtc)
         {
 
             var guestRole = await GetCustomerRoleBySystemName(SystemCustomerRoleNames.Guests);
@@ -743,8 +610,6 @@ namespace ForeverNote.Services.Customers
                 filter = filter & builder.Gte(x => x.LastActivityDateUtc, createdFromUtc.Value);
             if (createdToUtc.HasValue)
                 filter = filter & builder.Lte(x => x.LastActivityDateUtc, createdToUtc.Value);
-            if (onlyWithoutShoppingCart)
-                filter = filter & builder.Size(x => x.ShoppingCartItems, 0);
 
             filter = filter & builder.Eq(x => x.HasContributions, false);
 
@@ -1009,185 +874,6 @@ namespace ForeverNote.Services.Customers
 
         #endregion
 
-        #region Customer Address
-
-        public virtual async Task DeleteAddress(Address address)
-        {
-            if (address == null)
-                throw new ArgumentNullException("address");
-
-            var updatebuilder = Builders<Customer>.Update;
-            var update = updatebuilder.Pull(p => p.Addresses, address);
-            await _customerRepository.Collection.UpdateOneAsync(new BsonDocument("_id", address.CustomerId), update);
-
-        }
-
-        public virtual async Task InsertAddress(Address address)
-        {
-            if (address == null)
-                throw new ArgumentNullException("address");
-
-            if (address.StateProvinceId == "0")
-                address.StateProvinceId = "";
-
-            var updatebuilder = Builders<Customer>.Update;
-            var update = updatebuilder.AddToSet(p => p.Addresses, address);
-            await _customerRepository.Collection.UpdateOneAsync(new BsonDocument("_id", address.CustomerId), update);
-
-            //event notification
-            await _mediator.EntityInserted(address);
-        }
-
-        public virtual async Task UpdateAddress(Address address)
-        {
-            if (address == null)
-                throw new ArgumentNullException("address");
-
-            var builder = Builders<Customer>.Filter;
-            var filter = builder.Eq(x => x.Id, address.CustomerId);
-            filter = filter & builder.ElemMatch(x => x.Addresses, y => y.Id == address.Id);
-            var update = Builders<Customer>.Update
-                .Set(x => x.Addresses.ElementAt(-1).Address1, address.Address1)
-                .Set(x => x.Addresses.ElementAt(-1).Address2, address.Address2)
-                .Set(x => x.Addresses.ElementAt(-1).City, address.City)
-                .Set(x => x.Addresses.ElementAt(-1).Company, address.Company)
-                .Set(x => x.Addresses.ElementAt(-1).VatNumber, address.VatNumber)
-                .Set(x => x.Addresses.ElementAt(-1).CountryId, address.CountryId)
-                .Set(x => x.Addresses.ElementAt(-1).CustomAttributes, address.CustomAttributes)
-                .Set(x => x.Addresses.ElementAt(-1).Email, address.Email)
-                .Set(x => x.Addresses.ElementAt(-1).FaxNumber, address.FaxNumber)
-                .Set(x => x.Addresses.ElementAt(-1).FirstName, address.FirstName)
-                .Set(x => x.Addresses.ElementAt(-1).LastName, address.LastName)
-                .Set(x => x.Addresses.ElementAt(-1).PhoneNumber, address.PhoneNumber)
-                .Set(x => x.Addresses.ElementAt(-1).StateProvinceId, address.StateProvinceId)
-                .Set(x => x.Addresses.ElementAt(-1).ZipPostalCode, address.ZipPostalCode);
-
-            await _customerRepository.Collection.UpdateManyAsync(filter, update);
-            //event notification
-            await _mediator.EntityUpdated(address);
-        }
-
-
-        public virtual async Task UpdateBillingAddress(Address address)
-        {
-            if (address == null)
-                throw new ArgumentNullException("address");
-
-            var builder = Builders<Customer>.Filter;
-            var filter = builder.Eq(x => x.Id, address.CustomerId);
-            var update = Builders<Customer>.Update
-                .Set(x => x.BillingAddress, address);
-            await _customerRepository.Collection.UpdateOneAsync(filter, update);
-
-        }
-        public virtual async Task UpdateShippingAddress(Address address)
-        {
-            if (address == null)
-                throw new ArgumentNullException("address");
-
-            var builder = Builders<Customer>.Filter;
-            var filter = builder.Eq(x => x.Id, address.CustomerId);
-            var update = Builders<Customer>.Update
-                .Set(x => x.ShippingAddress, address);
-
-            await _customerRepository.Collection.UpdateOneAsync(filter, update);
-        }
-
-        public virtual async Task RemoveShippingAddress(string customerId)
-        {
-            var builder = Builders<Customer>.Filter;
-            var filter = builder.Eq(x => x.Id, customerId);
-            var update = Builders<Customer>.Update
-                .Set(x => x.ShippingAddress, null);
-
-            await _customerRepository.Collection.UpdateOneAsync(filter, update);
-        }
-
-        #endregion
-
-        #region Customer Shopping Cart Item
-
-        public virtual async Task DeleteShoppingCartItem(string customerId, ShoppingCartItem shoppingCartItem)
-        {
-            if (shoppingCartItem == null)
-                throw new ArgumentNullException("shoppingCartItem");
-
-            var updatebuilder = Builders<Customer>.Update;
-            var update = updatebuilder.Pull(p => p.ShoppingCartItems, shoppingCartItem);
-            await _customerRepository.Collection.UpdateOneAsync(new BsonDocument("_id", customerId), update);
-
-            if (shoppingCartItem.ShoppingCartType == ShoppingCartType.ShoppingCart)
-                await UpdateCustomerLastUpdateCartDate(customerId, DateTime.UtcNow);
-            else
-                await UpdateCustomerLastUpdateWishList(customerId, DateTime.UtcNow);
-
-        }
-
-        public virtual async Task ClearShoppingCartItem(string customerId, IList<ShoppingCartItem> cart)
-        {
-            var updatebuilder = Builders<Customer>.Update;
-            var ids = cart.Select(c => c.Id).ToArray();
-            var update = updatebuilder.PullFilter(p => p.ShoppingCartItems, p => ids.Contains(p.Id));
-            await _customerRepository.Collection.UpdateOneAsync(new BsonDocument("_id", customerId), update);
-
-            if (cart.Any(c => c.ShoppingCartType == ShoppingCartType.ShoppingCart || c.ShoppingCartType == ShoppingCartType.Auctions))
-                await UpdateCustomerLastUpdateCartDate(customerId, DateTime.UtcNow);
-            if (cart.Any(c => c.ShoppingCartType == ShoppingCartType.Wishlist))
-                await UpdateCustomerLastUpdateWishList(customerId, DateTime.UtcNow);
-
-        }
-
-        public virtual async Task InsertShoppingCartItem(string customerId, ShoppingCartItem shoppingCartItem)
-        {
-            if (shoppingCartItem == null)
-                throw new ArgumentNullException("shoppingCartItem");
-
-            var updatebuilder = Builders<Customer>.Update;
-            var update = updatebuilder.AddToSet(p => p.ShoppingCartItems, shoppingCartItem);
-            await _customerRepository.Collection.UpdateOneAsync(new BsonDocument("_id", customerId), update);
-
-            if (shoppingCartItem.ShoppingCartType == ShoppingCartType.ShoppingCart)
-                await UpdateCustomerLastUpdateCartDate(customerId, DateTime.UtcNow);
-            else
-                await UpdateCustomerLastUpdateWishList(customerId, DateTime.UtcNow);
-        }
-
-        public virtual async Task UpdateShoppingCartItem(string customerId, ShoppingCartItem shoppingCartItem)
-        {
-            if (shoppingCartItem == null)
-                throw new ArgumentNullException("shoppingCartItem");
-
-            var builder = Builders<Customer>.Filter;
-            var filter = builder.Eq(x => x.Id, customerId);
-            filter = filter & builder.ElemMatch(x => x.ShoppingCartItems, y => y.Id == shoppingCartItem.Id);
-            var update = Builders<Customer>.Update
-                .Set(x => x.ShoppingCartItems.ElementAt(-1).WarehouseId, shoppingCartItem.WarehouseId)
-                .Set(x => x.ShoppingCartItems.ElementAt(-1).Quantity, shoppingCartItem.Quantity)
-                .Set(x => x.ShoppingCartItems.ElementAt(-1).AdditionalShippingChargeProduct, shoppingCartItem.AdditionalShippingChargeProduct)
-                .Set(x => x.ShoppingCartItems.ElementAt(-1).IsFreeShipping, shoppingCartItem.IsFreeShipping)
-                .Set(x => x.ShoppingCartItems.ElementAt(-1).IsGiftCard, shoppingCartItem.IsGiftCard)
-                .Set(x => x.ShoppingCartItems.ElementAt(-1).IsRecurring, shoppingCartItem.IsRecurring)
-                .Set(x => x.ShoppingCartItems.ElementAt(-1).IsShipEnabled, shoppingCartItem.IsShipEnabled)
-                .Set(x => x.ShoppingCartItems.ElementAt(-1).IsTaxExempt, shoppingCartItem.IsTaxExempt)
-                .Set(x => x.ShoppingCartItems.ElementAt(-1).RentalStartDateUtc, shoppingCartItem.RentalStartDateUtc)
-                .Set(x => x.ShoppingCartItems.ElementAt(-1).RentalEndDateUtc, shoppingCartItem.RentalEndDateUtc)
-                .Set(x => x.ShoppingCartItems.ElementAt(-1).AttributesXml, shoppingCartItem.AttributesXml)
-                .Set(x => x.ShoppingCartItems.ElementAt(-1).CustomerEnteredPrice, shoppingCartItem.CustomerEnteredPrice)
-                .Set(x => x.ShoppingCartItems.ElementAt(-1).UpdatedOnUtc, shoppingCartItem.UpdatedOnUtc)
-                .Set(x => x.ShoppingCartItems.ElementAt(-1).ShoppingCartTypeId, shoppingCartItem.ShoppingCartTypeId);
-
-            await _customerRepository.Collection.UpdateManyAsync(filter, update);
-
-            if (shoppingCartItem.ShoppingCartType == ShoppingCartType.ShoppingCart)
-                await UpdateCustomerLastUpdateCartDate(customerId, DateTime.UtcNow);
-            else
-                await UpdateCustomerLastUpdateWishList(customerId, DateTime.UtcNow);
-
-        }
-
-        #endregion
-
-       
         #region Customer note
 
         // <summary>

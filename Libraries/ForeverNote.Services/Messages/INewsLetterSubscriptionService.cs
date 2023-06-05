@@ -49,9 +49,8 @@ namespace ForeverNote.Services.Messages
         /// Gets a newsletter subscription by email and store ID
         /// </summary>
         /// <param name="email">The newsletter subscription email</param>
-        /// <param name="storeId">Store identifier</param>
         /// <returns>NewsLetter subscription</returns>
-        Task<NewsLetterSubscription> GetNewsLetterSubscriptionByEmailAndStoreId(string email, string storeId);
+        Task<NewsLetterSubscription> GetNewsLetterSubscriptionByEmailAndStoreId(string email);
 
 
         /// <summary>
@@ -65,13 +64,11 @@ namespace ForeverNote.Services.Messages
         /// Gets the newsletter subscription list
         /// </summary>
         /// <param name="email">Email to search or string. Empty to load all records.</param>
-        /// <param name="storeId">Store identifier. "" to load all records.</param>
         /// <param name="isActive">Value indicating whether subscriber record should be active or not; null to load all records</param>
-        /// <param name="customerRoleId">Customer role identifier. Used to filter subscribers by customer role. "" to load all records.</param>
         /// <param name="pageIndex">Page index</param>
         /// <param name="pageSize">Page size</param>
         /// <returns>NewsLetterSubscription entities</returns>
         Task<IPagedList<NewsLetterSubscription>> GetAllNewsLetterSubscriptions(string email = null,
-            string storeId = "", bool? isActive = null, string[] categoryIds = null, int pageIndex = 0, int pageSize = int.MaxValue);
+            bool? isActive = null, string[] categoryIds = null, int pageIndex = 0, int pageSize = int.MaxValue);
     }
 }

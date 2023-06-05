@@ -1,5 +1,3 @@
-using ForeverNote.Core.Domain.Common;
-using ForeverNote.Core.Domain.Orders;
 using System;
 using System.Collections.Generic;
 
@@ -11,8 +9,6 @@ namespace ForeverNote.Core.Domain.Customers
     public partial class Customer : BaseEntity
     {
         private ICollection<CustomerRole> _customerRoles;
-        private ICollection<ShoppingCartItem> _shoppingCartItems;
-        private ICollection<Address> _addresses;
         private ICollection<string> _customerTags;
 
         /// <summary>
@@ -73,21 +69,6 @@ namespace ForeverNote.Core.Domain.Customers
         /// Gets or sets a value indicating whether the customer has a free shipping to the next a order
         /// </summary>
         public bool FreeShipping { get; set; }
-
-        /// <summary>
-        /// Gets or sets the affiliate identifier
-        /// </summary>
-        public string AffiliateId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the vendor identifier with which this customer is associated (manager)
-        /// </summary>
-        public string VendorId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the store identifier 
-        /// </summary>
-        public string StoreId { get; set; }
 
         /// <summary>
         /// Gets or sets the staff store identifier
@@ -187,34 +168,6 @@ namespace ForeverNote.Core.Domain.Customers
         {
             get { return _customerRoles ?? (_customerRoles = new List<CustomerRole>()); }
             protected set { _customerRoles = value; }
-        }
-
-        /// <summary>
-        /// Gets or sets shopping cart items
-        /// </summary>
-        public virtual ICollection<ShoppingCartItem> ShoppingCartItems
-        {
-            get { return _shoppingCartItems ?? (_shoppingCartItems = new List<ShoppingCartItem>()); }
-            protected set { _shoppingCartItems = value; }            
-        }
-
-        /// <summary>
-        /// Default billing address
-        /// </summary>
-        public virtual Address BillingAddress { get; set; }
-
-        /// <summary>
-        /// Default shipping address
-        /// </summary>
-        public virtual Address ShippingAddress { get; set; }
-
-        /// <summary>
-        /// Gets or sets customer addresses
-        /// </summary>
-        public virtual ICollection<Address> Addresses
-        {
-            get { return _addresses ?? (_addresses = new List<Address>()); }
-            protected set { _addresses = value; }            
         }
 
         /// <summary>

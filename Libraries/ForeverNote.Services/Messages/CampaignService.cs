@@ -7,7 +7,6 @@ using ForeverNote.Services.Events;
 using ForeverNote.Services.Localization;
 using ForeverNote.Services.Logging;
 using ForeverNote.Services.Messages.DotLiquidDrops;
-using ForeverNote.Services.Stores;
 using MediatR;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -28,23 +27,24 @@ namespace ForeverNote.Services.Messages
         private readonly IMessageTokenProvider _messageTokenProvider;
         private readonly IQueuedEmailService _queuedEmailService;
         private readonly ICustomerService _customerService;
-        private readonly IStoreService _storeService;
         private readonly IMediator _mediator;
         private readonly ICustomerActivityService _customerActivityService;
         private readonly ILocalizationService _localizationService;
         private readonly ILanguageService _languageService;
 
-        public CampaignService(IRepository<Campaign> campaignRepository,
+        public CampaignService(
+            IRepository<Campaign> campaignRepository,
             IRepository<CampaignHistory> campaignHistoryRepository,
             IRepository<NewsLetterSubscription> newsLetterSubscriptionRepository,
             IRepository<Customer> customerRepository,
             IEmailSender emailSender, IMessageTokenProvider messageTokenProvider,
             IQueuedEmailService queuedEmailService,
-            ICustomerService customerService, IStoreService storeService,
+            ICustomerService customerService,
             IMediator mediator,
             ICustomerActivityService customerActivityService,
             ILocalizationService localizationService,
-            ILanguageService languageService)
+            ILanguageService languageService
+        )
         {
             _campaignRepository = campaignRepository;
             _campaignHistoryRepository = campaignHistoryRepository;
@@ -53,7 +53,6 @@ namespace ForeverNote.Services.Messages
             _emailSender = emailSender;
             _messageTokenProvider = messageTokenProvider;
             _queuedEmailService = queuedEmailService;
-            _storeService = storeService;
             _customerService = customerService;
             _mediator = mediator;
             _customerActivityService = customerActivityService;
@@ -161,14 +160,13 @@ namespace ForeverNote.Services.Messages
 
             var model = new PagedList<NewsLetterSubscription>();
             if (campaign.CustomerCreatedDateFrom.HasValue || campaign.CustomerCreatedDateTo.HasValue ||
-                campaign.CustomerHasShoppingCartCondition != CampaignCondition.All || campaign.CustomerHasShoppingCartCondition != CampaignCondition.All ||
                 campaign.CustomerLastActivityDateFrom.HasValue || campaign.CustomerLastActivityDateTo.HasValue ||
                 campaign.CustomerLastPurchaseDateFrom.HasValue || campaign.CustomerLastPurchaseDateTo.HasValue ||
                 campaign.CustomerTags.Count > 0 || campaign.CustomerRoles.Count > 0)
             {
 
                 var query = from o in _newsLetterSubscriptionRepository.Table
-                            where o.Active && o.CustomerId != "" && (o.StoreId == campaign.StoreId || String.IsNullOrEmpty(campaign.StoreId))
+                            where o.Active && o.CustomerId != ""
                             join c in _customerRepository.Table on o.CustomerId equals c.Id into joined
                             from customers in joined
                             select new CampaignCustomerHelp() {
@@ -179,7 +177,6 @@ namespace ForeverNote.Services.Messages
                                 CustomerTags = customers.CustomerTags,
                                 CustomerRoles = customers.CustomerRoles,
                                 NewsletterCategories = o.Categories,
-                                HasShoppingCartItems = customers.ShoppingCartItems.Any(),
                                 LastActivityDateUtc = customers.LastActivityDateUtc,
                                 LastPurchaseDateUtc = customers.LastPurchaseDateUtc,
                                 NewsLetterSubscriptionGuid = o.NewsLetterSubscriptionGuid
@@ -202,18 +199,6 @@ namespace ForeverNote.Services.Messages
                     query = query.Where(x => x.LastPurchaseDateUtc >= campaign.CustomerLastPurchaseDateFrom.Value);
                 if (campaign.CustomerLastPurchaseDateTo.HasValue)
                     query = query.Where(x => x.LastPurchaseDateUtc <= campaign.CustomerLastPurchaseDateTo.Value);
-
-                //customer has shopping carts
-                if (campaign.CustomerHasShoppingCartCondition == CampaignCondition.True)
-                    query = query.Where(x => x.HasShoppingCartItems);
-                if (campaign.CustomerHasShoppingCartCondition == CampaignCondition.False)
-                    query = query.Where(x => !x.HasShoppingCartItems);
-
-                //customer has order
-                if (campaign.CustomerHasOrdersCondition == CampaignCondition.True)
-                    query = query.Where(x => x.IsHasOrders);
-                if (campaign.CustomerHasOrdersCondition == CampaignCondition.False)
-                    query = query.Where(x => !x.IsHasOrders);
 
                 //tags
                 if (campaign.CustomerTags.Count > 0)
@@ -244,7 +229,7 @@ namespace ForeverNote.Services.Messages
             else
             {
                 var query = from o in _newsLetterSubscriptionRepository.Table
-                            where o.Active && (o.StoreId == campaign.StoreId || string.IsNullOrEmpty(campaign.StoreId))
+                            where o.Active
                             select o;
 
                 if (campaign.NewsletterCategories.Count > 0)
@@ -272,8 +257,6 @@ namespace ForeverNote.Services.Messages
             public DateTime CreatedOnUtc { get; set; }
             public DateTime LastActivityDateUtc { get; set; }
             public DateTime? LastPurchaseDateUtc { get; set; }
-            public bool HasShoppingCartItems { get; set; }
-            public bool IsHasOrders { get; set; }
             public ICollection<string> CustomerTags { get; set; }
             public ICollection<string> NewsletterCategories { get; set; }
             public ICollection<CustomerRole> CustomerRoles { get; set; }
@@ -320,16 +303,10 @@ namespace ForeverNote.Services.Messages
                     continue;
 
                 var liquidObject = new LiquidObject();
-                var store = await _storeService.GetStoreById(campaign.StoreId);
-                if (store == null)
-                    store = (await _storeService.GetAllStores()).FirstOrDefault();
 
-                await _messageTokenProvider.AddStoreTokens(liquidObject, store, language, emailAccount);
-                await _messageTokenProvider.AddNewsLetterSubscriptionTokens(liquidObject, subscription, store);
                 if (customer != null)
                 {
-                    await _messageTokenProvider.AddCustomerTokens(liquidObject, customer, store, language);
-                    await _messageTokenProvider.AddShoppingCartTokens(liquidObject, customer, store, language);
+                    await _messageTokenProvider.AddCustomerTokens(liquidObject, customer, language);
                 }
 
                 var body = LiquidExtensions.Render(liquidObject, campaign.Body);
@@ -346,7 +323,7 @@ namespace ForeverNote.Services.Messages
                     EmailAccountId = emailAccount.Id
                 };
                 await _queuedEmailService.InsertQueuedEmail(email);
-                await InsertCampaignHistory(new CampaignHistory() { CampaignId = campaign.Id, CustomerId = subscription.CustomerId, Email = subscription.Email, CreatedDateUtc = DateTime.UtcNow, StoreId = campaign.StoreId });
+                await InsertCampaignHistory(new CampaignHistory() { CampaignId = campaign.Id, CustomerId = subscription.CustomerId, Email = subscription.Email, CreatedDateUtc = DateTime.UtcNow });
 
                 //activity log
                 if (customer != null)
@@ -377,17 +354,11 @@ namespace ForeverNote.Services.Messages
             if (language == null)
                 language = (await _languageService.GetAllLanguages()).FirstOrDefault();
 
-            var store = await _storeService.GetStoreById(campaign.StoreId);
-            if (store == null)
-                store = (await _storeService.GetAllStores()).FirstOrDefault();
-
             var liquidObject = new LiquidObject();
-            await _messageTokenProvider.AddStoreTokens(liquidObject, store, language, emailAccount);
             var customer = await _customerService.GetCustomerByEmail(email);
             if (customer != null)
             {
-                await _messageTokenProvider.AddCustomerTokens(liquidObject, customer, store, language);
-                await _messageTokenProvider.AddShoppingCartTokens(liquidObject, customer, store, language);
+                await _messageTokenProvider.AddCustomerTokens(liquidObject, customer, language);
             }
 
             var body = LiquidExtensions.Render(liquidObject, campaign.Body);

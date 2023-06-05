@@ -31,10 +31,5 @@ namespace ForeverNote.Core.Domain.Affiliates
         /// Gets or sets a value indicating whether the entity is active
         /// </summary>
         public bool Active { get; set; }
-
-        /// <summary>
-        /// Gets or sets the address
-        /// </summary>
-        public virtual Address Address { get; set; }
     }
 }

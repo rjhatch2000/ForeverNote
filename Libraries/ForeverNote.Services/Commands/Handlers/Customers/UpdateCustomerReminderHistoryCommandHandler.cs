@@ -30,18 +30,13 @@ namespace ForeverNote.Services.Commands.Handlers.Customers
             filter &= builder.Eq(x => x.Status, (int)CustomerReminderHistoryStatusEnum.Started);
             var update = Builders<CustomerReminderHistory>.Update
                 .Set(x => x.EndDate, DateTime.UtcNow)
-                .Set(x => x.Status, (int)CustomerReminderHistoryStatusEnum.CompletedOrdered)
-                .Set(x => x.OrderId, request.OrderId);
+            ;
             await _customerReminderHistory.Collection.UpdateManyAsync(filter, update);
 
             //update Ended reminders
             filter = builder.Eq(x => x.CustomerId, request.CustomerId);
             filter &= builder.Eq(x => x.Status, (int)CustomerReminderHistoryStatusEnum.CompletedReminder);
             filter &= builder.Gt(x => x.EndDate, DateTime.UtcNow.AddHours(-36));
-
-            update = Builders<CustomerReminderHistory>.Update
-                .Set(x => x.Status, (int)CustomerReminderHistoryStatusEnum.CompletedOrdered)
-                .Set(x => x.OrderId, request.OrderId);
 
             await _customerReminderHistory.Collection.UpdateManyAsync(filter, update);
 

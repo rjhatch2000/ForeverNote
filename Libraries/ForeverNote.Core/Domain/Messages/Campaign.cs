@@ -28,11 +28,6 @@ namespace ForeverNote.Core.Domain.Messages
         public string Body { get; set; }
 
         /// <summary>
-        /// Gets or sets the store identifier
-        /// </summary>
-        public string StoreId { get; set; }
-
-        /// <summary>
         /// Gets or sets the lang identifier
         /// </summary>
         public string LanguageId { get; set; }
@@ -43,18 +38,6 @@ namespace ForeverNote.Core.Domain.Messages
         public DateTime? CustomerLastActivityDateTo { get; set; }
         public DateTime? CustomerLastPurchaseDateFrom { get; set; }
         public DateTime? CustomerLastPurchaseDateTo { get; set; }
-
-        public int CustomerHasOrders { get; set; }
-        public CampaignCondition CustomerHasOrdersCondition {
-            get { return (CampaignCondition)CustomerHasOrders; }
-            set { this.CustomerHasOrders = (int)value; }
-        }
-
-        public int CustomerHasShoppingCart { get; set; }
-        public CampaignCondition CustomerHasShoppingCartCondition {
-            get { return (CampaignCondition)CustomerHasShoppingCart; }
-            set { this.CustomerHasShoppingCart = (int)value; }
-        }
 
         /// <summary>
         /// Gets or sets the date and time of instance creation

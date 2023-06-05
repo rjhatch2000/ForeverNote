@@ -22,33 +22,31 @@ namespace ForeverNote.Services.Catalog
         /// <param name="categoryName">Category name</param>
         /// <param name="pageIndex">Page index</param>
         /// <param name="pageSize">Page size</param>
-        /// <param name="showHidden">A value indicating whether to show hidden records</param>
         /// <returns>Categories</returns>
-        Task<IPagedList<Category>> GetAllCategories(string categoryName = "", string storeId = "",
-            int pageIndex = 0, int pageSize = int.MaxValue, bool showHidden = false);
+        Task<IPagedList<Category>> GetAllCategories(string categoryName = "",
+            int pageIndex = 0, int pageSize = int.MaxValue);
 
         /// <summary>
         /// Gets all categories filtered by parent category identifier
         /// </summary>
         /// <param name="parentCategoryId">Parent category identifier</param>
-        /// <param name="showHidden">A value indicating whether to show hidden records</param>
         /// <param name="includeAllLevels">A value indicating whether we should load all child levels</param>
         /// <returns>Categories</returns>
-        Task<IList<Category>> GetAllCategoriesByParentCategoryId(string parentCategoryId = "",
-            bool showHidden = false, bool includeAllLevels = false);
+        Task<IList<Category>> GetAllCategoriesByParentCategoryId(
+            string parentCategoryId = "",
+            bool includeAllLevels = false
+        );
 
         /// <summary>
         /// Gets all categories displayed on the home page
         /// </summary>
-        /// <param name="showHidden">A value indicating whether to show hidden records</param>
         /// <returns>Categories</returns>
-        Task<IList<Category>> GetAllCategoriesDisplayedOnHomePage(bool showHidden = false);
+        Task<IList<Category>> GetAllCategoriesDisplayedOnHomePage();
 
         /// <summary>
         /// Gets all categories displayed on the home page - featured products
         /// </summary>
-        /// <param name="showHidden">A value indicating whether to show hidden records</param>
-        Task<IList<Category>> GetAllCategoriesFeaturedProductsOnHomePage(bool showHidden = false);
+        Task<IList<Category>> GetAllCategoriesFeaturedProductsOnHomePage();
 
         /// <summary>
         /// Gets all categories displayed search box
@@ -61,22 +59,20 @@ namespace ForeverNote.Services.Catalog
         /// Get category breadcrumb 
         /// </summary>
         /// <param name="category">Category</param>
-        /// <param name="showHidden">A value indicating whether to load hidden records</param>
         /// <returns>Category breadcrumb </returns>
-        Task<IList<Category>> GetCategoryBreadCrumb(Category category, bool showHidden = false);
+        Task<IList<Category>> GetCategoryBreadCrumb(Category category);
 
         /// <summary>
         /// Get category breadcrumb 
         /// </summary>
         /// <param name="category">Category</param>
         /// <param name="allCategories">All categories</param>
-        /// <param name="showHidden">A value indicating whether to load hidden records</param>
         /// <returns>Category breadcrumb </returns>
-        IList<Category> GetCategoryBreadCrumb(Category category, IList<Category> allCategories, bool showHidden = false);
+        IList<Category> GetCategoryBreadCrumb(Category category, IList<Category> allCategories);
 
         /// <summary>
         /// Get formatted category breadcrumb 
-        /// Note: ACL and store mapping is ignored
+        /// Note: ACL mapping is ignored
         /// </summary>
         /// <param name="category">Category</param>
         /// <param name="separator">Separator</param>
@@ -86,7 +82,7 @@ namespace ForeverNote.Services.Catalog
 
         /// <summary>
         /// Get formatted category breadcrumb 
-        /// Note: ACL and store mapping is ignored
+        /// Note: ACL mapping is ignored
         /// </summary>
         /// <param name="category">Category</param>
         /// <param name="allCategories">All categories</param>

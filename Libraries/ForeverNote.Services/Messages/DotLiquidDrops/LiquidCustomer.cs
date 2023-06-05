@@ -1,8 +1,7 @@
 ﻿using DotLiquid;
+using ForeverNote.Core.Domain.Common;
 using ForeverNote.Core.Domain.Customers;
 using ForeverNote.Core.Domain.Localization;
-using ForeverNote.Core.Domain.Stores;
-using ForeverNote.Core.Domain.Tax;
 using ForeverNote.Services.Common;
 using ForeverNote.Services.Customers;
 using System.Collections.Generic;
@@ -12,18 +11,22 @@ namespace ForeverNote.Services.Messages.DotLiquidDrops
 {
     public partial class LiquidCustomer : Drop
     {
+        private readonly CommonSettings _commonSettings;
         private Customer _customer;
         private CustomerNote _customerNote;
-        private Store _store;
         private Language _language;
 
-        public LiquidCustomer(Customer customer, Store store, Language language, CustomerNote customerNote = null)
+        public LiquidCustomer(
+            CommonSettings commonSettings,
+            Customer customer,
+            Language language,
+            CustomerNote customerNote = null
+        )
         {
-
-            this._customer = customer;
-            this._customerNote = customerNote;
-            this._store = store;
-            this._language = language;
+            _commonSettings = commonSettings;
+            _customer = customer;
+            _customerNote = customerNote;
+            _language = language;
 
             AdditionalTokens = new Dictionary<string, string>();
         }
@@ -97,29 +100,19 @@ namespace ForeverNote.Services.Messages.DotLiquidDrops
             get { return _customer.GetAttributeFromEntity<string>(SystemCustomerAttributeNames.Fax); }
         }
 
-        public string VatNumber
-        {
-            get { return _customer.GetAttributeFromEntity<string>(SystemCustomerAttributeNames.VatNumber); }
-        }
-
-        public string VatNumberStatus
-        {
-            get { return ((VatNumberStatus)_customer.GetAttributeFromEntity<int>(SystemCustomerAttributeNames.VatNumberStatusId)).ToString(); }
-        }
-
         public string PasswordRecoveryURL
         {
-            get { return string.Format("{0}passwordrecovery/confirm?token={1}&email={2}", (_store.SslEnabled ? _store.SecureUrl : _store.Url), _customer.GetAttributeFromEntity<string>(SystemCustomerAttributeNames.PasswordRecoveryToken), WebUtility.UrlEncode(_customer.Email)); }
+            get { return string.Format("{0}passwordrecovery/confirm?token={1}&email={2}", (_commonSettings.SslEnabled ? _commonSettings.SecureUrl : _commonSettings.Url), _customer.GetAttributeFromEntity<string>(SystemCustomerAttributeNames.PasswordRecoveryToken), WebUtility.UrlEncode(_customer.Email)); }
         }
 
         public string AccountActivationURL
         {
-            get { return string.Format("{0}customer/activation?token={1}&email={2}", (_store.SslEnabled ? _store.SecureUrl : _store.Url), _customer.GetAttributeFromEntity<string>(SystemCustomerAttributeNames.AccountActivationToken), WebUtility.UrlEncode(_customer.Email)); ; }
+            get { return string.Format("{0}customer/activation?token={1}&email={2}", (_commonSettings.SslEnabled ? _commonSettings.SecureUrl : _commonSettings.Url), _customer.GetAttributeFromEntity<string>(SystemCustomerAttributeNames.AccountActivationToken), WebUtility.UrlEncode(_customer.Email)); ; }
         }
 
         public string WishlistURLForCustomer
         {
-            get { return string.Format("{0}wishlist/{1}", (_store.SslEnabled ? _store.SecureUrl : _store.Url), _customer.CustomerGuid); }
+            get { return string.Format("{0}wishlist/{1}", (_commonSettings.SslEnabled ? _commonSettings.SecureUrl : _commonSettings.Url), _customer.CustomerGuid); }
         }
 
         public string NewNoteText
@@ -134,7 +127,7 @@ namespace ForeverNote.Services.Messages.DotLiquidDrops
 
         public string CustomerNoteAttachmentUrl
         {
-            get { return string.Format("{0}download/customernotefile/{1}", (_store.SslEnabled ? _store.SecureUrl : _store.Url), _customerNote.Id); }
+            get { return string.Format("{0}download/customernotefile/{1}", (_commonSettings.SslEnabled ? _commonSettings.SecureUrl : _commonSettings.Url), _customerNote.Id); }
         }
 
         public IDictionary<string, string> AdditionalTokens { get; set; }

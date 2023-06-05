@@ -38,16 +38,14 @@ namespace ForeverNote.Services.Messages
         /// Gets a message template by name
         /// </summary>
         /// <param name="messageTemplateName">Message template name</param>
-        /// <param name="storeId">Store identifier</param>
         /// <returns>Message template</returns>
-        Task<MessageTemplate> GetMessageTemplateByName(string messageTemplateName, string storeId);
+        Task<MessageTemplate> GetMessageTemplateByName(string messageTemplateName);
 
         /// <summary>
         /// Gets all message templates
         /// </summary>
-        /// <param name="storeId">Store identifier; pass "" to load all records</param>
         /// <returns>Message template list</returns>
-        Task<IList<MessageTemplate>> GetAllMessageTemplates(string storeId);
+        Task<IList<MessageTemplate>> GetAllMessageTemplates();
 
         /// <summary>
         /// Create a copy of message template with all depended data

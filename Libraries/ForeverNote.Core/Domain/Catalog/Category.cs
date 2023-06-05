@@ -1,7 +1,5 @@
 using ForeverNote.Core.Domain.Localization;
 using ForeverNote.Core.Domain.Security;
-using ForeverNote.Core.Domain.Seo;
-using ForeverNote.Core.Domain.Stores;
 using System;
 using System.Collections.Generic;
 
@@ -10,14 +8,13 @@ namespace ForeverNote.Core.Domain.Catalog
     /// <summary>
     /// Represents a category
     /// </summary>
-    public partial class Category : BaseEntity, ISlugSupported, IAclSupported, ILocalizedEntity, IStoreMappingSupported, ITreeNode
+    public partial class Category : BaseEntity, IAclSupported, ILocalizedEntity, ITreeNode
     {
         private ICollection<string> _appliedDiscounts;
 
         public Category()
         {
             CustomerRoles = new List<string>();
-            Stores = new List<string>();
             Locales = new List<LocalizedProperty>();
         }
         /// <summary>
@@ -110,22 +107,6 @@ namespace ForeverNote.Core.Domain.Catalog
         /// </summary>
         public bool SubjectToAcl { get; set; }
         public IList<string> CustomerRoles { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether the entity is limited/restricted to certain stores
-        /// </summary>
-        public bool LimitedToStores { get; set; }
-        public IList<string> Stores { get; set; }
-
-        /// <summary>
-        /// Gets or sets the name
-        /// </summary>
-        public string SeName { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether the entity is published
-        /// </summary>
-        public bool Published { get; set; }
 
         /// <summary>
         /// Gets or sets the display order

@@ -1,16 +1,10 @@
 ﻿using ForeverNote.Core.Domain.Catalog;
-using ForeverNote.Core.Domain.Common;
 using ForeverNote.Core.Domain.Customers;
-using ForeverNote.Core.Domain.Directory;
-using ForeverNote.Core.Domain.Discounts;
 using ForeverNote.Core.Domain.Documents;
-using ForeverNote.Core.Domain.Forums;
 using ForeverNote.Core.Domain.Logging;
 using ForeverNote.Core.Domain.Media;
 using ForeverNote.Core.Domain.Messages;
 using ForeverNote.Core.Domain.Orders;
-using ForeverNote.Core.Domain.Shipping;
-using ForeverNote.Core.Domain.Vendors;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
@@ -37,21 +31,10 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
             ConventionRegistry.Register("ApplicationConventions", cp, t => true);
 
             RegisterClassProduct();
-            RegisterClassProductAttributeCombination();
-            RegisterClassProductAttributeMapping();
-            RegisterClassProductAttributeValue();
             RegisterClassProductCategory();
-            RegisterClassProductManufacturer();
             RegisterClassProductPicture();
-            RegisterClassProductSpecificationAttribute();
             RegisterClassProductTag();
-            RegisterClassProductWarehouseInventory();
-            RegisterClassRelatedProduct();
-            RegisterClassBundleProduct();
-            RegisterClassTierPrice();
-            RegisterClassAddress();
             RegisterClassCustomer();
-            RegisterClassShoppingCartItem();
             RegisterClassCustomerAction();
             RegisterClassActionCondition();
             RegisterClassCustomerAttribute();
@@ -60,8 +43,6 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
             RegisterClassReminderCondition();
             RegisterClassCustomerReminderHistory();
             RegisterClassCustomerRole();
-            RegisterClassDiscount();
-            RegisterClassForumTopic();
             RegisterClassLog();
             RegisterClassDownload();
             RegisterClassCampaign();
@@ -69,12 +50,6 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
             RegisterClassFormAttribute();
             RegisterClassMessageTemplate();
             RegisterClassQueuedEmail();
-            RegisterClassCheckoutAttribute();
-            RegisterClassGiftCard();
-            RegisterClassOrder();
-            RegisterClassShipmentItem();
-            RegisterClassVendorNote();
-            RegisterClassCurrency();
             RegisterClassDocument();
         }
 
@@ -84,54 +59,13 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
             {
                 cm.AutoMap();
                 //ignore these Fields, an equivalent of [BsonIgnore]
-                cm.UnmapMember(c => c.ProductType);
                 cm.UnmapMember(c => c.IntervalUnitType);
-                cm.UnmapMember(c => c.BackorderMode);
-                cm.UnmapMember(c => c.DownloadActivationType);
-                cm.UnmapMember(c => c.GiftCardType);
-                cm.UnmapMember(c => c.LowStockActivity);
-                cm.UnmapMember(c => c.ManageInventoryMethod);
                 cm.UnmapMember(c => c.RecurringCyclePeriod);
-            });
-        }
-        private static void RegisterClassProductAttributeCombination()
-        {
-            BsonClassMap.RegisterClassMap<ProductAttributeCombination>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.ProductId);
-            });
-        }
-        private static void RegisterClassProductAttributeMapping()
-        {
-            BsonClassMap.RegisterClassMap<ProductAttributeMapping>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.ProductId);
-                cm.UnmapMember(c => c.AttributeControlType);
-            });
-        }
-        private static void RegisterClassProductAttributeValue()
-        {
-            BsonClassMap.RegisterClassMap<ProductAttributeValue>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.ProductAttributeMappingId);
-                cm.UnmapMember(c => c.ProductId);
-                cm.UnmapMember(c => c.AttributeValueType);
             });
         }
         private static void RegisterClassProductCategory()
         {
             BsonClassMap.RegisterClassMap<ProductCategory>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.ProductId);
-            });
-        }
-        private static void RegisterClassProductManufacturer()
-        {
-            BsonClassMap.RegisterClassMap<ProductManufacturer>(cm =>
             {
                 cm.AutoMap();
                 cm.UnmapMember(c => c.ProductId);
@@ -146,15 +80,6 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
             });
 
         }
-        private static void RegisterClassProductSpecificationAttribute()
-        {
-            BsonClassMap.RegisterClassMap<ProductSpecificationAttribute>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.ProductId);
-                cm.UnmapMember(c => c.AttributeType);
-            });
-        }
         private static void RegisterClassProductTag()
         {
             BsonClassMap.RegisterClassMap<ProductTag>(cm =>
@@ -163,60 +88,12 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
                 cm.UnmapMember(c => c.ProductId);
             });
         }
-        private static void RegisterClassProductWarehouseInventory()
-        {
-            BsonClassMap.RegisterClassMap<ProductWarehouseInventory>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.ProductId);
-            });
-        }
-        private static void RegisterClassRelatedProduct()
-        {
-            BsonClassMap.RegisterClassMap<RelatedProduct>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.ProductId1);
-            });
-        }
-        private static void RegisterClassBundleProduct()
-        {
-            BsonClassMap.RegisterClassMap<BundleProduct>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.ProductBundleId);
-            });
-        }
-        private static void RegisterClassTierPrice()
-        {
-            BsonClassMap.RegisterClassMap<TierPrice>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.ProductId);
-            });
-        }
-        private static void RegisterClassAddress()
-        {
-            BsonClassMap.RegisterClassMap<Address>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.CustomerId);
-            });
-        }
         private static void RegisterClassCustomer()
         {
             BsonClassMap.RegisterClassMap<Customer>(cm =>
             {
                 cm.AutoMap();
                 cm.UnmapMember(c => c.PasswordFormat);
-            });
-        }
-        private static void RegisterClassShoppingCartItem()
-        {
-            BsonClassMap.RegisterClassMap<ShoppingCartItem>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.ShoppingCartType);
             });
         }
         private static void RegisterClassCustomerAction()
@@ -242,7 +119,6 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
             BsonClassMap.RegisterClassMap<CustomerAttribute>(cm =>
             {
                 cm.AutoMap();
-                cm.UnmapMember(c => c.AttributeControlType);
             });
         }
         private static void RegisterClassCustomerHistoryPassword()
@@ -288,23 +164,6 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
                 cm.UnmapMember(c => c.CustomerId);
             });
         }
-        private static void RegisterClassDiscount()
-        {
-            BsonClassMap.RegisterClassMap<Discount>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.DiscountType);
-                cm.UnmapMember(c => c.DiscountLimitation);
-            });
-        }
-        private static void RegisterClassForumTopic()
-        {
-            BsonClassMap.RegisterClassMap<ForumTopic>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.ForumTopicType);
-            });
-        }
         private static void RegisterClassLog()
         {
             BsonClassMap.RegisterClassMap<Log>(cm =>
@@ -326,8 +185,6 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
             BsonClassMap.RegisterClassMap<Campaign>(cm =>
             {
                 cm.AutoMap();
-                cm.UnmapMember(c => c.CustomerHasOrdersCondition);
-                cm.UnmapMember(c => c.CustomerHasShoppingCartCondition);
             });
         }
         private static void RegisterClassEmailAccount()
@@ -360,58 +217,6 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
             {
                 cm.AutoMap();
                 cm.UnmapMember(c => c.Priority);
-            });
-        }
-        private static void RegisterClassCheckoutAttribute()
-        {
-            BsonClassMap.RegisterClassMap<CheckoutAttribute>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.AttributeControlType);
-            });
-        }
-        private static void RegisterClassGiftCard()
-        {
-            BsonClassMap.RegisterClassMap<GiftCard>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.GiftCardType);
-            });
-        }
-        private static void RegisterClassOrder()
-        {
-            BsonClassMap.RegisterClassMap<Order>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.OrderStatus);
-                cm.UnmapMember(c => c.PaymentStatus);
-                cm.UnmapMember(c => c.ShippingStatus);
-                cm.UnmapMember(c => c.CustomerTaxDisplayType);
-                cm.UnmapMember(c => c.TaxRatesDictionary);
-            });
-        }
-        private static void RegisterClassShipmentItem()
-        {
-            BsonClassMap.RegisterClassMap<ShipmentItem>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.ShipmentId);
-            });
-        }
-        private static void RegisterClassVendorNote()
-        {
-            BsonClassMap.RegisterClassMap<VendorNote>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.VendorId);
-            });
-        }
-        private static void RegisterClassCurrency()
-        {
-            BsonClassMap.RegisterClassMap<Currency>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.RoundingType);
             });
         }
         private static void RegisterClassDocument()

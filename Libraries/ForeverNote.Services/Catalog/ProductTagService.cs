@@ -24,9 +24,8 @@ namespace ForeverNote.Services.Catalog
         /// Key for caching
         /// </summary>
         /// <remarks>
-        /// {0} : store ID
         /// </remarks>
-        private const string PRODUCTTAG_COUNT_KEY = "ForeverNote.producttag.count-{0}";
+        private const string PRODUCTTAG_COUNT_KEY = "ForeverNote.producttag.count";
 
         /// <summary>
         /// Key for all tags
@@ -92,11 +91,10 @@ namespace ForeverNote.Services.Catalog
         /// <summary>
         /// Get product count for each of existing product tag
         /// </summary>
-        /// <param name="storeId">Store identifier</param>
         /// <returns>Dictionary of "product tag ID : product count"</returns>
-        private async Task<Dictionary<string, int>> GetProductCount(string storeId)
+        private async Task<Dictionary<string, int>> GetProductCount()
         {
-            string key = string.Format(PRODUCTTAG_COUNT_KEY, storeId);
+            string key = string.Format(PRODUCTTAG_COUNT_KEY);
             return await _cacheManager.GetAsync(key, async () =>
              {
                  var query = from pt in _productTagRepository.Table
@@ -174,19 +172,6 @@ namespace ForeverNote.Services.Catalog
         }
 
         /// <summary>
-        /// Gets product tag by sename
-        /// </summary>
-        /// <param name="sename">Product tag sename</param>
-        /// <returns>Product tag</returns>
-        public virtual Task<ProductTag> GetProductTagBySeName(string sename)
-        {
-            var query = from pt in _productTagRepository.Table
-                        where pt.SeName == sename
-                        select pt;
-            return query.FirstOrDefaultAsync();
-        }
-
-        /// <summary>
         /// Inserts a product tag
         /// </summary>
         /// <param name="productTag">Product tag</param>
@@ -237,11 +222,10 @@ namespace ForeverNote.Services.Catalog
         /// Get number of products
         /// </summary>
         /// <param name="productTagId">Product tag identifier</param>
-        /// <param name="storeId">Store identifier</param>
         /// <returns>Number of products</returns>
-        public virtual async Task<int> GetProductCount(string productTagId, string storeId)
+        public virtual async Task<int> GetProductCount(string productTagId)
         {
-            var dictionary = await GetProductCount(storeId);
+            var dictionary = await GetProductCount();
             if (dictionary.ContainsKey(productTagId))
                 return dictionary[productTagId];
 

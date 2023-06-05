@@ -363,87 +363,25 @@ namespace ForeverNote.Core.Domain.Catalog
         public bool IgnoreAcl { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether to ignore "limit per store" rules (side-wide). It can significantly improve performance when enabled.
-        /// </summary>
-        public bool IgnoreStoreLimitations { get; set; }
-
-        /// <summary>
         /// Gets or sets a value indicating whether to use customer product prices. It can significantly improve performance when disable.
         /// </summary>
         public bool CustomerProductPrice { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether to ignore load Filterable Specification Attribute Option (side-wide). It can significantly improve performance when enabled.
-        /// </summary>
-        public bool IgnoreFilterableSpecAttributeOption { get; set; }
-        /// <summary>
-        /// Gets or sets a value indicating whether to ignore load Filterable available start and end date products (side-wide). It can significantly improve performance when enabled.
-        /// </summary>
-        public bool IgnoreFilterableAvailableStartEndDateTime { get; set; }
-        /// <summary>
-        /// Gets or sets a value indicating maximum number of 'back in stock' subscription
-        /// </summary>
-        public int MaximumBackInStockSubscriptions { get; set; }
-
-        /// <summary>
-        /// Gets or sets the value indicating how many manufacturers to display in manufacturers block
-        /// </summary>
-        public int ManufacturersBlockItemsToDisplay { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to display information about shipping and tax in the footer (used in Germany)
-        /// </summary>
-        public bool DisplayTaxShippingInfoFooter { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to display information about shipping and tax on product details pages (used in Germany)
-        /// </summary>
-        public bool DisplayTaxShippingInfoProductDetailsPage { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to display information about shipping and tax in product boxes (used in Germany)
-        /// </summary>
-        public bool DisplayTaxShippingInfoProductBoxes { get; set; }
-        /// <summary>
-        /// Gets or sets a value indicating whether to display information about shipping and tax on shopping cart page (used in Germany)
-        /// </summary>
-        public bool DisplayTaxShippingInfoShoppingCart { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to display information about shipping and tax on wishlist page (used in Germany)
-        /// </summary>
-        public bool DisplayTaxShippingInfoWishlist { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether to display information about shipping and tax on order details page (used in Germany)
-        /// </summary>
-        public bool DisplayTaxShippingInfoOrderDetailsPage { get; set; }
-
-
-        /// <summary>
         /// Gets or sets the default value to use for Category page size options (for new categories)
         /// </summary>
         public string DefaultCategoryPageSizeOptions { get; set; }
+        
         /// <summary>
         /// Gets or sets the default value to use for Category page size (for new categories)
         /// </summary>
         public int DefaultCategoryPageSize { get; set; }
-        /// <summary>
-        /// Gets or sets the default value to use for Manufacturer page size options (for new manufacturers)
-        /// </summary>
-        public string DefaultManufacturerPageSizeOptions { get; set; }
-        /// <summary>
-        /// Gets or sets the default value to use for Manufacturer page size (for new manufacturers)
-        /// </summary>
-        public int DefaultManufacturerPageSize { get; set; }
-        /// <summary>
-        /// Gets or sets the default value to use show extra field quantity on catalog pages
-        /// </summary>
-        public bool DisplayQuantityOnCatalogPages { get; set; }
+        
         /// <summary>
         /// Limit of featured products
         /// </summary>
         public int LimitOfFeaturedProducts { get; set; }
+        
         /// <summary>
         /// Gets or sets a list of disabled values of ProductSortingEnum
         /// </summary>

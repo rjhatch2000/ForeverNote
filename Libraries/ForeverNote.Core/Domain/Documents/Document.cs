@@ -1,5 +1,4 @@
 ﻿using ForeverNote.Core.Domain.Security;
-using ForeverNote.Core.Domain.Stores;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System;
@@ -10,7 +9,7 @@ namespace ForeverNote.Core.Domain.Documents
     /// <summary>
     /// Represents a document
     /// </summary>
-    public partial class Document : BaseEntity, IAclSupported, IStoreMappingSupported
+    public partial class Document : BaseEntity, IAclSupported
     {
         public Document()
         {

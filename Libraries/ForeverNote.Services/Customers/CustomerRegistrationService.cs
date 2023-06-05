@@ -4,9 +4,7 @@ using ForeverNote.Services.Common;
 using ForeverNote.Services.Events.Web;
 using ForeverNote.Services.Localization;
 using ForeverNote.Services.Messages;
-using ForeverNote.Services.Orders;
 using ForeverNote.Services.Security;
-using ForeverNote.Services.Stores;
 using MediatR;
 using System;
 using System.Linq;
@@ -25,11 +23,8 @@ namespace ForeverNote.Services.Customers
         private readonly IEncryptionService _encryptionService;
         private readonly INewsLetterSubscriptionService _newsLetterSubscriptionService;
         private readonly ILocalizationService _localizationService;
-        private readonly IStoreService _storeService;
         private readonly IMediator _mediator;
-        private readonly RewardPointsSettings _rewardPointsSettings;
         private readonly CustomerSettings _customerSettings;
-        private readonly IRewardPointsService _rewardPointsService;
 
         #endregion
 
@@ -51,21 +46,16 @@ namespace ForeverNote.Services.Customers
             IEncryptionService encryptionService, 
             INewsLetterSubscriptionService newsLetterSubscriptionService,
             ILocalizationService localizationService,
-            IStoreService storeService,
             IMediator mediator,
-            RewardPointsSettings rewardPointsSettings,
-            CustomerSettings customerSettings,
-            IRewardPointsService rewardPointsService)
+            CustomerSettings customerSettings
+        )
         {
             _customerService = customerService;
             _encryptionService = encryptionService;
             _newsLetterSubscriptionService = newsLetterSubscriptionService;
             _localizationService = localizationService;
-            _storeService = storeService;
             _mediator = mediator;
-            _rewardPointsSettings = rewardPointsSettings;
             _customerSettings = customerSettings;
-            _rewardPointsService = rewardPointsService;
         }
 
         #endregion
@@ -239,7 +229,6 @@ namespace ForeverNote.Services.Customers
             request.Customer.Username = request.Username;
             request.Customer.Email = request.Email;
             request.Customer.PasswordFormat = request.PasswordFormat;
-            request.Customer.StoreId = request.StoreId;
 
             switch (request.PasswordFormat)
             {
@@ -282,14 +271,6 @@ namespace ForeverNote.Services.Customers
                 request.Customer.CustomerRoles.Remove(guestRole);
                 guestRole.CustomerId = request.Customer.Id;
                 await _customerService.DeleteCustomerRoleInCustomer(guestRole);
-            }
-            //Add reward points for customer registration (if enabled)
-            if (_rewardPointsSettings.Enabled &&
-                _rewardPointsSettings.PointsForRegistration > 0)
-            {
-                await _rewardPointsService.AddRewardPointsHistory(request.Customer.Id, _rewardPointsSettings.PointsForRegistration,
-                    request.StoreId,
-                    _localizationService.GetResource("RewardPoints.Message.EarnedForRegistration"), "", 0);
             }
             request.Customer.PasswordChangeDateUtc = DateTime.UtcNow;
             await _customerService.UpdateCustomer(request.Customer);
@@ -425,14 +406,11 @@ namespace ForeverNote.Services.Customers
             //update newsletter subscription (if required)
             if (!String.IsNullOrEmpty(oldEmail) && !oldEmail.Equals(newEmail, StringComparison.OrdinalIgnoreCase))
             {
-                foreach (var store in await _storeService.GetAllStores())
+                var subscriptionOld = await _newsLetterSubscriptionService.GetNewsLetterSubscriptionByEmailAndStoreId(oldEmail);
+                if (subscriptionOld != null)
                 {
-                    var subscriptionOld = await _newsLetterSubscriptionService.GetNewsLetterSubscriptionByEmailAndStoreId(oldEmail, store.Id);
-                    if (subscriptionOld != null)
-                    {
-                        subscriptionOld.Email = newEmail;
-                        await _newsLetterSubscriptionService.UpdateNewsLetterSubscription(subscriptionOld);
-                    }
+                    subscriptionOld.Email = newEmail;
+                    await _newsLetterSubscriptionService.UpdateNewsLetterSubscription(subscriptionOld);
                 }
             }
         }

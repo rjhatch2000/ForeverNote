@@ -1,8 +1,6 @@
 ﻿using ForeverNote.Core.Caching;
 using ForeverNote.Core.Data;
-using ForeverNote.Core.Domain.Catalog;
 using ForeverNote.Core.Domain.Customers;
-using ForeverNote.Core.Domain.Orders;
 using ForeverNote.Services.Commands.Models.Customers;
 using MediatR;
 using MongoDB.Driver;
@@ -68,83 +66,6 @@ namespace ForeverNote.Services.Customers
         #endregion
 
         #region Methods
-
-        public virtual async Task AddToCart(ShoppingCartItem cart, Product product, Customer customer)
-        {
-            var actiontypes = await GetAllCustomerActionType();
-            var actionType = actiontypes.Where(x => x.SystemKeyword == CustomerActionTypeEnum.AddToCart.ToString()).FirstOrDefault();
-            if (actionType?.Enabled == true)
-            {
-                var datetimeUtcNow = DateTime.UtcNow;
-                var query = from a in _customerActionRepository.Table
-                            where a.Active == true && a.ActionTypeId == actionType.Id
-                                    && datetimeUtcNow >= a.StartDateTimeUtc && datetimeUtcNow <= a.EndDateTimeUtc
-                            select a;
-
-                foreach (var item in query.ToList())
-                {
-                    if (!UsedAction(item.Id, customer.Id))
-                    {
-                        if (await _mediator.Send(new CustomerActionEventConditionCommand() {
-                            CustomerActionTypes = actiontypes,
-                            Action = item,
-                            ProductId = product.Id,
-                            AttributesXml = cart.AttributesXml,
-                            CustomerId = customer.Id
-                        }))
-                        {
-                            await _mediator.Send(new CustomerActionEventReactionCommand() {
-                                CustomerActionTypes = actiontypes,
-                                Action = item,
-                                CartItem = cart,
-                                CustomerId = customer.Id
-                            });
-                        }
-                    }
-                }
-            }
-        }
-
-        public virtual async Task AddOrder(Order order, CustomerActionTypeEnum customerActionType)
-        {
-            var actiontypes = await GetAllCustomerActionType();
-            var actionType = actiontypes.Where(x => x.SystemKeyword == customerActionType.ToString()).FirstOrDefault();
-            if (actionType?.Enabled == true)
-            {
-                var datetimeUtcNow = DateTime.UtcNow;
-                var query = from a in _customerActionRepository.Table
-                            where a.Active == true && a.ActionTypeId == actionType.Id
-                                    && datetimeUtcNow >= a.StartDateTimeUtc && datetimeUtcNow <= a.EndDateTimeUtc
-                            select a;
-
-                foreach (var item in query.ToList())
-                {
-                    if (!UsedAction(item.Id, order.CustomerId))
-                    {
-                        foreach (var orderItem in order.OrderItems)
-                        {
-                            if (await _mediator.Send(new CustomerActionEventConditionCommand() {
-                                CustomerActionTypes = actiontypes,
-                                ProductId = orderItem.ProductId,
-                                CustomerId = order.CustomerId,
-                                AttributesXml = orderItem.AttributesXml
-                            }))
-                            {
-                                await _mediator.Send(new CustomerActionEventReactionCommand() {
-                                    CustomerActionTypes = actiontypes,
-                                    Action = item,
-                                    Order = order,
-                                    CustomerId = order.CustomerId
-                                });
-                                break;
-                            }
-                        }
-                    }
-                }
-
-            }
-
-        }
 
         public virtual async Task Url(Customer customer, string currentUrl, string previousUrl)
         {

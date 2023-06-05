@@ -122,7 +122,7 @@ namespace ForeverNote.Services.Catalog
             foreach (string productId in productIds)
             {
                 var product = await _productService.GetProductById(productId);
-                if (product != null && product.Published)
+                if (product != null)
                     products.Add(product);
             }
             return products;

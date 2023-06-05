@@ -20,7 +20,6 @@ namespace ForeverNote.Core.Domain.Common
 
         public bool SitemapEnabled { get; set; }
         public bool SitemapIncludeCategories { get; set; }
-        public bool SitemapIncludeManufacturers { get; set; }
         public bool SitemapIncludeProducts { get; set; }
         public bool SitemapIncludeImage { get; set; }
 
@@ -96,6 +95,10 @@ namespace ForeverNote.Core.Domain.Common
         /// </summary>
         public bool AllowToReadLetsEncryptFile { get; set; }
 
+        public bool SslEnabled { get; set; }
+        public string SecureUrl { get; set; }
+        public string Url { get; set; }
+        public string Sitename { get; set; }
 
     }
 }

@@ -27,8 +27,6 @@ namespace ForeverNote.Core.Domain.Customers
             get { return (CustomerReminderHistoryStatusEnum)Status; }
             set { this.Status = (int)value; }
         }
-        public string OrderId { get; set; }
-        public string BaseOrderId { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         

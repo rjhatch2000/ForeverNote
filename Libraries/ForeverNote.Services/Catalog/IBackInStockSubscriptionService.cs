@@ -19,23 +19,20 @@ namespace ForeverNote.Services.Catalog
         /// Gets all subscriptions
         /// </summary>
         /// <param name="customerId">Customer identifier</param>
-        /// <param name="storeId">Store identifier; pass "" to load all records</param>
         /// <param name="pageIndex">Page index</param>
         /// <param name="pageSize">Page size</param>
         /// <returns>Subscriptions</returns>
-        Task<IPagedList<BackInStockSubscription>> GetAllSubscriptionsByCustomerId(string customerId,
-            string storeId = "", int pageIndex = 0, int pageSize = int.MaxValue);
+        Task<IPagedList<BackInStockSubscription>> GetAllSubscriptionsByCustomerId(
+            string customerId, int pageIndex = 0, int pageSize = int.MaxValue);
 
         /// <summary>
         /// Gets all subscriptions
         /// </summary>
         /// <param name="customerId">Customer id</param>
         /// <param name="productId">Product identifier</param>
-        /// <param name="attrxml">Attribute xml</param>
-        /// <param name="storeId">Store identifier</param>
-        /// <param name="warehouseId">Warehouse identifier</param>
+        /// <param name="attributexml">Attribute xml</param>
         /// <returns>Subscriptions</returns>
-        Task<BackInStockSubscription> FindSubscription(string customerId, string productId, string attributexml, string storeId, string warehouseId);
+        Task<BackInStockSubscription> FindSubscription(string customerId, string productId, string attributexml);
 
         /// <summary>
         /// Gets a subscription
@@ -60,17 +57,15 @@ namespace ForeverNote.Services.Catalog
         /// Send notification to subscribers
         /// </summary>
         /// <param name="product">Product</param>
-        /// <param name="warehouse">Warehouse ident</param>
         /// <returns>Number of sent email</returns>
-        Task SendNotificationsToSubscribers(Product product, string warehouse);
+        Task SendNotificationsToSubscribers(Product product);
 
         /// <summary>
         /// Send notification to subscribers
         /// </summary>
         /// <param name="product">Product</param>
         /// <param name="attributeXml">Attribute xml</param>
-        /// <param name="warehouse">Warehouse ident</param>
         /// <returns>Number of sent email</returns>
-        Task SendNotificationsToSubscribers(Product product, string attributeXml, string warehouse);
+        Task SendNotificationsToSubscribers(Product product, string attributeXml);
     }
 }

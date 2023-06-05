@@ -25,13 +25,6 @@ namespace ForeverNote.Services.Media
         Task<byte[]> LoadPictureBinary(Picture picture, bool fromDb);
 
         /// <summary>
-        /// Get picture SEO friendly name
-        /// </summary>
-        /// <param name="name">Name</param>
-        /// <returns>Result</returns>
-        string GetPictureSeName(string name);
-
-        /// <summary>
         /// Gets the default picture URL
         /// </summary>
         /// <param name="targetSize">The target picture size (longest side)</param>

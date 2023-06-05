@@ -1,6 +1,6 @@
 ﻿using DotLiquid;
+using ForeverNote.Core.Domain.Common;
 using ForeverNote.Core.Domain.Messages;
-using ForeverNote.Core.Domain.Stores;
 using System;
 using System.Collections.Generic;
 
@@ -8,12 +8,16 @@ namespace ForeverNote.Services.Messages.DotLiquidDrops
 {
     public partial class LiquidNewsLetterSubscription : Drop
     {
-        private NewsLetterSubscription _subscription;
-        private Store _store;
-        public LiquidNewsLetterSubscription(NewsLetterSubscription subscription, Store store)
+        private readonly CommonSettings _commonSettings;
+        private readonly NewsLetterSubscription _subscription;
+
+        public LiquidNewsLetterSubscription(
+            CommonSettings commonSettings,
+            NewsLetterSubscription subscription
+        )
         {
-            this._subscription = subscription;
-            this._store = store;
+            _commonSettings = commonSettings;
+            _subscription = subscription;
             AdditionalTokens = new Dictionary<string, string>();
         }
 
@@ -27,7 +31,7 @@ namespace ForeverNote.Services.Messages.DotLiquidDrops
             get
             {
                 string urlFormat = "{0}newsletter/subscriptionactivation/{1}/{2}";
-                var activationUrl = String.Format(urlFormat, (_store.SslEnabled ? _store.SecureUrl : _store.Url), _subscription.NewsLetterSubscriptionGuid, "true");
+                var activationUrl = String.Format(urlFormat, (_commonSettings.SslEnabled ? _commonSettings.SecureUrl : _commonSettings.Url), _subscription.NewsLetterSubscriptionGuid, "true");
                 return activationUrl;
             }
         }
@@ -37,7 +41,7 @@ namespace ForeverNote.Services.Messages.DotLiquidDrops
             get
             {
                 string urlFormat = "{0}newsletter/subscriptionactivation/{1}/{2}";
-                var deActivationUrl = String.Format(urlFormat, (_store.SslEnabled ? _store.SecureUrl : _store.Url), _subscription.NewsLetterSubscriptionGuid, "false");
+                var deActivationUrl = String.Format(urlFormat, (_commonSettings.SslEnabled ? _commonSettings.SecureUrl : _commonSettings.Url), _subscription.NewsLetterSubscriptionGuid, "false");
                 return deActivationUrl;
             }
         }

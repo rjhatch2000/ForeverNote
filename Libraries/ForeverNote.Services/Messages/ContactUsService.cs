@@ -55,13 +55,12 @@ namespace ForeverNote.Services.Messages
         /// <param name="fromUtc">ContactUs item creation from; null to load all records</param>
         /// <param name="toUtc">ContactUs item creation to; null to load all records</param>
         /// <param name="email">email</param>
-        /// <param name="vendorId">vendorId; null to load all records</param>
         /// <param name="customerId">customerId; null to load all records</param>
         /// <param name="pageIndex">Page index</param>
         /// <param name="pageSize">Page size</param>
         /// <returns>ContactUs items</returns>
         public virtual async Task<IPagedList<ContactUs>> GetAllContactUs(DateTime? fromUtc = null, DateTime? toUtc = null,
-            string email = "", string vendorId = "", string customerId = "", string storeId = "",
+            string email = "", string customerId = "",
             int pageIndex = 0, int pageSize = int.MaxValue)
         {
             var builder = Builders<ContactUs>.Filter;
@@ -71,12 +70,8 @@ namespace ForeverNote.Services.Messages
                 filter = filter & builder.Where(l => fromUtc.Value <= l.CreatedOnUtc);
             if (toUtc.HasValue)
                 filter = filter & builder.Where(l => toUtc.Value >= l.CreatedOnUtc);
-            if (!String.IsNullOrEmpty(vendorId))
-                filter = filter & builder.Where(l => vendorId == l.VendorId);
             if (!String.IsNullOrEmpty(customerId))
                 filter = filter & builder.Where(l => customerId == l.CustomerId);
-            if (!String.IsNullOrEmpty(storeId))
-                filter = filter & builder.Where(l => storeId == l.StoreId);
 
             if (!String.IsNullOrEmpty(email))
                 filter = filter & builder.Where(l => l.Email.ToLower().Contains(email.ToLower()));

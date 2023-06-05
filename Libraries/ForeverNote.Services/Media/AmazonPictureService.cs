@@ -6,6 +6,7 @@ using ForeverNote.Core;
 using ForeverNote.Core.Caching;
 using ForeverNote.Core.Configuration;
 using ForeverNote.Core.Data;
+using ForeverNote.Core.Domain.Common;
 using ForeverNote.Core.Domain.Media;
 using ForeverNote.Services.Configuration;
 using MediatR;
@@ -34,21 +35,23 @@ namespace ForeverNote.Services.Media
 
         #region Ctor
 
-        public AmazonPictureService(IRepository<Picture> pictureRepository,
+        public AmazonPictureService(
+            CommonSettings commonSettings,
+            IRepository<Picture> pictureRepository,
             ISettingService settingService,
             ForeverNote.Services.Logging.ILogger logger,
             IMediator mediator,
             IWebHostEnvironment hostingEnvironment,
-            IStoreContext storeContext,
             ICacheManager cacheManager,
             MediaSettings mediaSettings,
-            ForeverNoteConfig config)
-            : base(pictureRepository,
+            ForeverNoteConfig config
+        ) : base(
+                commonSettings,
+                pictureRepository,
                 settingService,
                 logger,
                 mediator,
                 hostingEnvironment,
-                storeContext,
                 cacheManager,
                 mediaSettings)
         {

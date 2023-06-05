@@ -1,14 +1,10 @@
 ﻿using Autofac;
-using Autofac.Extensions.DependencyInjection;
 using AutoMapper;
 using ForeverNote.Core.ComponentModel;
 using ForeverNote.Core.Configuration;
-using ForeverNote.Core.Domain.Shipping;
-using ForeverNote.Core.Extensions;
 using ForeverNote.Core.Infrastructure.DependencyManagement;
 using ForeverNote.Core.Infrastructure.Mapper;
 using ForeverNote.Core.Infrastructure.MongoDB;
-using ForeverNote.Core.Plugins;
 using ForeverNote.Core.Roslyn;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -60,8 +56,6 @@ namespace ForeverNote.Core.Infrastructure
 
             //create and sort instances of mapper configurations
             var instances = mapperConfigurations
-                .Where(mapperConfiguration => PluginManager.FindPlugin(mapperConfiguration)
-                    .Return(plugin => plugin.Installed, true)) //ignore not installed plugins
                 .Select(mapperConfiguration => (IMapperProfile)Activator.CreateInstance(mapperConfiguration))
                 .OrderBy(mapperConfiguration => mapperConfiguration.Order);
 
@@ -89,11 +83,6 @@ namespace ForeverNote.Core.Infrastructure
 
             //dictionaries
             TypeDescriptor.AddAttributes(typeof(Dictionary<int, int>), new TypeConverterAttribute(typeof(GenericDictionaryTypeConverter<int, int>)));
-
-            //shipping option
-            TypeDescriptor.AddAttributes(typeof(ShippingOption), new TypeConverterAttribute(typeof(ShippingOptionTypeConverter)));
-            TypeDescriptor.AddAttributes(typeof(List<ShippingOption>), new TypeConverterAttribute(typeof(ShippingOptionListTypeConverter)));
-            TypeDescriptor.AddAttributes(typeof(IList<ShippingOption>), new TypeConverterAttribute(typeof(ShippingOptionListTypeConverter)));
         }
 
         #endregion
@@ -121,7 +110,6 @@ namespace ForeverNote.Core.Infrastructure
 
             //initialize plugins
             var mvcCoreBuilder = services.AddMvcCore();
-            PluginManager.Initialize(mvcCoreBuilder, config);
 
             //initialize CTX sctipts
             RoslynCompiler.Initialize(mvcCoreBuilder.PartManager, config);
@@ -142,7 +130,6 @@ namespace ForeverNote.Core.Infrastructure
 
             //create and sort instances of startup configurations
             var instances = startupConfigurations
-                .Where(startup => PluginManager.FindPlugin(startup).Return(plugin => plugin.Installed, true)) //ignore not installed plugins
                 .Select(startup => (IForeverNoteStartup)Activator.CreateInstance(startup))
                 .OrderBy(startup => startup.Order);
 
@@ -177,7 +164,6 @@ namespace ForeverNote.Core.Infrastructure
 
             //create and sort instances of startup configurations
             var instances = startupConfigurations
-                .Where(startup => PluginManager.FindPlugin(startup).Return(plugin => plugin.Installed, true)) //ignore not installed plugins
                 .Select(startup => (IForeverNoteStartup)Activator.CreateInstance(startup))
                 .OrderBy(startup => startup.Order);
 

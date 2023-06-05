@@ -36,13 +36,6 @@ namespace ForeverNote.Services.Catalog
         Task<ProductTag> GetProductTagByName(string name);
 
         /// <summary>
-        /// Gets product tag by sename
-        /// </summary>
-        /// <param name="sename">Product tag sename</param>
-        /// <returns>Product tag</returns>
-        Task<ProductTag> GetProductTagBySeName(string sename);
-
-        /// <summary>
         /// Inserts a product tag
         /// </summary>
         /// <param name="productTag">Product tag</param>
@@ -58,8 +51,7 @@ namespace ForeverNote.Services.Catalog
         /// Get number of products
         /// </summary>
         /// <param name="productTagId">Product tag identifier</param>
-        /// <param name="storeId">Store identifier</param>
         /// <returns>Number of products</returns>
-        Task<int> GetProductCount(string productTagId, string storeId);
+        Task<int> GetProductCount(string productTagId);
     }
 }

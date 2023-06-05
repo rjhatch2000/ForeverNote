@@ -12,7 +12,6 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 
@@ -247,16 +246,6 @@ namespace ForeverNote.Core
             {
                 //add application path base if exists
                 storeLocation = IsRequestAvailable() ? $"{storeHost.TrimEnd('/')}{_httpContextAccessor.HttpContext.Request.PathBase}" : storeHost;
-            }
-
-            //if host is empty (it is possible only when HttpContext is not available), use URL of a store entity configured in admin area
-            if (string.IsNullOrEmpty(storeHost) && DataSettingsHelper.DatabaseIsInstalled())
-            {
-                var currentStore = _serviceProvider.GetRequiredService<IStoreContext>().CurrentStore;
-                if (currentStore != null)
-                    storeLocation = !currentStore.SslEnabled ? currentStore.Url : currentStore.SecureUrl;
-                else
-                    throw new Exception("Current store cannot be loaded");
             }
 
             //ensure that URL is ended with slash

@@ -93,9 +93,6 @@ namespace ForeverNote.Services.Customers
             var attributes = await ParseCustomerAttributes(attributesXml);
             foreach (var attribute in attributes)
             {
-                if (!attribute.ShouldHaveValues())
-                    continue;
-
                 var valuesStr = ParseValues(attributesXml, attribute.Id);
                 foreach (string valueStr in valuesStr)
                 {

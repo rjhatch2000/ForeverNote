@@ -1,25 +1,28 @@
 ﻿using DotLiquid;
 using ForeverNote.Core.Domain.Catalog;
+using ForeverNote.Core.Domain.Common;
 using ForeverNote.Core.Domain.Localization;
-using ForeverNote.Core.Domain.Stores;
 using ForeverNote.Services.Catalog;
 using ForeverNote.Services.Localization;
-using ForeverNote.Services.Seo;
 using System.Collections.Generic;
 
 namespace ForeverNote.Services.Messages.DotLiquidDrops
 {
     public partial class LiquidProduct : Drop
     {
-        private Product _product;
-        private Language _language;
-        private Store _store;
+        private readonly CommonSettings _commonSettings;
+        private readonly Product _product;
+        private readonly Language _language;
 
-        public LiquidProduct(Product product, Language language, Store store)
+        public LiquidProduct(
+            CommonSettings commonSettings,
+            Product product,
+            Language language
+        )
         {
-            this._product = product;
-            this._language = language;
-            this._store = store;
+            _commonSettings = commonSettings;
+            _product = product;
+            _language = language;
             AdditionalTokens = new Dictionary<string, string>();
         }
 
@@ -38,24 +41,16 @@ namespace ForeverNote.Services.Messages.DotLiquidDrops
             get { return _product.GetLocalized(x => x.ShortDescription, _language.Id); }
         }
 
-        public string SKU
-        {
-            get { return _product.Sku; }
-        }
-
-        public string StockQuantity
-        {
-            get { return _product.GetTotalStockQuantity().ToString(); }
-        }
-
-        public decimal Price
-        {
-            get { return _product.Price; }
-        }
-
         public string ProductURLForCustomer
         {
-            get { return string.Format("{0}{1}", (_store.SslEnabled ? _store.SecureUrl : _store.Url), _product.GetSeName(_language.Id)); }
+            get
+            {
+                return string.Format("{0}{1}{2}",
+                    _commonSettings.SslEnabled ? _commonSettings.SecureUrl : _commonSettings.Url,
+                    "/product/",
+                    _product.Id
+                );
+            }
         }
 
         public IDictionary<string, string> AdditionalTokens { get; set; }

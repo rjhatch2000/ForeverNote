@@ -27,7 +27,7 @@ namespace ForeverNote.Services.Tasks
             var olderThanMinutes = _commonSettings.DeleteGuestTaskOlderThanMinutes;
             // Default value in case 0 is returned.  0 would effectively disable this service and harm performance.
             olderThanMinutes = olderThanMinutes == 0 ? 1440 : olderThanMinutes;
-            await _customerService.DeleteGuestCustomers(null, DateTime.UtcNow.AddMinutes(-olderThanMinutes), true);
+            await _customerService.DeleteGuestCustomers(null, DateTime.UtcNow.AddMinutes(-olderThanMinutes));
         }
     }
 }

@@ -1,26 +1,24 @@
 ﻿using DotLiquid;
 using ForeverNote.Core.Domain.Catalog;
+using ForeverNote.Core.Domain.Common;
 using ForeverNote.Core.Domain.Localization;
-using ForeverNote.Core.Domain.Stores;
-using ForeverNote.Services.Seo;
-using ForeverNote.Services.Stores;
 using System.Collections.Generic;
 
 namespace ForeverNote.Services.Messages.DotLiquidDrops
 {
     public partial class LiquidBackInStockSubscription : Drop
     {
-        private readonly BackInStockSubscription _backInStockSubscription;
-        private readonly Product _product;
-        private readonly Store _store;
-        private readonly Language _language;
 
-        public LiquidBackInStockSubscription(Product product, BackInStockSubscription backInStockSubscription, Store store, Language language)
+        private readonly CommonSettings _commonSettings;
+        private readonly Product _product;
+
+        public LiquidBackInStockSubscription(
+            CommonSettings commonSettings,
+            Product product
+        )
         {
-            this._backInStockSubscription = backInStockSubscription;
-            this._product = product;
-            this._store = store;
-            this._language = language;
+            _commonSettings = commonSettings;
+            _product = product;
 
             AdditionalTokens = new Dictionary<string, string>();
         }
@@ -32,7 +30,10 @@ namespace ForeverNote.Services.Messages.DotLiquidDrops
 
         public string ProductUrl
         {
-            get { return string.Format("{0}{1}", _store.SslEnabled ? _store.SecureUrl : _store.Url, _product.GetSeName(_language.Id)); }
+            get { return string.Format("{0}{1}{2}",
+                _commonSettings.SslEnabled ? _commonSettings.SecureUrl : _commonSettings.Url,
+                "/product/",
+                _product.Id); }
         }
 
         public IDictionary<string, string> AdditionalTokens { get; set; }
