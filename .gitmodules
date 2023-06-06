@@ -1,0 +1,3 @@
+[submodule "grandnode2"]
+	path = grandnode2
+	url = https://github.com/grandnode/grandnode2.git
