@@ -6,12 +6,12 @@ namespace ForeverNote.Services.Messages.DotLiquidDrops
     public partial class LiquidEmailAFriend : Drop
     {
         private string _personalMessage;
-        private string _customerEmail;
+        private string _userEmail;
 
-        public LiquidEmailAFriend(string personalMessage, string customerEmail)
+        public LiquidEmailAFriend(string personalMessage, string userEmail)
         {
             this._personalMessage = personalMessage;
-            this._customerEmail = customerEmail;
+            this._userEmail = userEmail;
 
             AdditionalTokens = new Dictionary<string, string>();
         }
@@ -23,7 +23,7 @@ namespace ForeverNote.Services.Messages.DotLiquidDrops
 
         public string Email
         {
-            get { return _customerEmail; }
+            get { return _userEmail; }
         }
 
         public IDictionary<string, string> AdditionalTokens { get; set; }

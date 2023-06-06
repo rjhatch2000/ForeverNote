@@ -15,51 +15,15 @@ namespace ForeverNote.Core.Domain.Messages
 
         public Drop AttributeCombination { get; set; }
 
-        public Drop Auctions { get; set; }
+        public Drop User { get; set; }
 
-        public Drop BackInStockSubscription { get; set; }
+        public Drop Note { get; set; }
 
-        public Drop BlogComment { get; set; }
-
-        public Drop Customer { get; set; }
-
-        public Drop Forums { get; set; }
-
-        public Drop GiftCard { get; set; }
-
-        public Drop Knowledgebase { get; set; }
-
-        public Drop NewsComment { get; set; }
-
-        public Drop NewsLetterSubscription { get; set; }
-
-        public Drop Order { get; set; }
-
-        public Drop PrivateMessage { get; set; }
-
-        public Drop Product { get; set; }
-
-        public Drop ProductReview { get; set; }
-
-        public Drop RecurringPayment { get; set; }
-
-        public Drop ReturnRequest { get; set; }
-
-        public Drop Shipment { get; set; }
-
-        public Drop ShoppingCart { get; set; }
-
-        public Drop Store { get; set; }
-
-        public Drop Vendor { get; set; }
-
-        public Drop VendorReview { get; set; }
-
+        //TODO: Delete?
         public Drop EmailAFriend { get; set; }
 
+        //TODO: Delete?
         public Drop AskQuestion { get; set; }
-
-        public Drop VatValidationResult { get; set; }
 
         public Drop ContactUs { get; set; }
 

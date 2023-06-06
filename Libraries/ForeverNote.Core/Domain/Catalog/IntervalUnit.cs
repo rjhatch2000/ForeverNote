@@ -1,7 +1,7 @@
 ﻿namespace ForeverNote.Core.Domain.Catalog
 {
     /// <summary>
-    /// Represents a interval unit type for product
+    /// Represents a interval unit type for note
     /// </summary>
     public enum IntervalUnit
     {

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ForeverNote.Core.Domain.Messages
+﻿namespace ForeverNote.Core.Domain.Messages
 {
     /// <summary>
     /// Search term record (for statistics)
@@ -8,20 +6,14 @@ namespace ForeverNote.Core.Domain.Messages
     public partial class ContactUs : BaseEntity
     {
         /// <summary>
-        /// Gets or sets the customer identifier
+        /// Gets or sets the user identifier
         /// </summary>
-        public string CustomerId { get; set; }
+        public string UserId { get; set; }
 
         /// <summary>
         /// Gets or sets the IP address
         /// </summary>
         public string IpAddress { get; set; }
-
-        /// <summary>
-        /// Gets or sets the date and time of entity creation
-        /// </summary>
-        public DateTime CreatedOnUtc { get; set; }
-
 
         /// <summary>
         /// Gets or sets the email

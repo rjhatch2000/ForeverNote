@@ -1,10 +1,8 @@
-﻿using ForeverNote.Core.Domain.Catalog;
-using ForeverNote.Core.Domain.Customers;
-using ForeverNote.Core.Domain.Documents;
-using ForeverNote.Core.Domain.Logging;
+﻿using ForeverNote.Core.Domain.Logging;
 using ForeverNote.Core.Domain.Media;
 using ForeverNote.Core.Domain.Messages;
-using ForeverNote.Core.Domain.Orders;
+using ForeverNote.Core.Domain.Notes;
+using ForeverNote.Core.Domain.Users;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
@@ -30,19 +28,18 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
             cp.Add(new IgnoreExtraElementsConvention(true));
             ConventionRegistry.Register("ApplicationConventions", cp, t => true);
 
-            RegisterClassProduct();
-            RegisterClassProductCategory();
-            RegisterClassProductPicture();
-            RegisterClassProductTag();
-            RegisterClassCustomer();
-            RegisterClassCustomerAction();
+            RegisterClassNote();
+            RegisterClassNoteNotebook();
+            RegisterClassNotePicture();
+            RegisterClassNoteTag();
+            RegisterClassUser();
+            RegisterClassUserAction();
             RegisterClassActionCondition();
-            RegisterClassCustomerAttribute();
-            RegisterClassCustomerHistoryPassword();
-            RegisterClassCustomerReminder();
+            RegisterClassUserAttribute();
+            RegisterClassUserHistoryPassword();
+            RegisterClassUserReminder();
             RegisterClassReminderCondition();
-            RegisterClassCustomerReminderHistory();
-            RegisterClassCustomerRole();
+            RegisterClassUserReminderHistory();
             RegisterClassLog();
             RegisterClassDownload();
             RegisterClassCampaign();
@@ -50,12 +47,11 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
             RegisterClassFormAttribute();
             RegisterClassMessageTemplate();
             RegisterClassQueuedEmail();
-            RegisterClassDocument();
         }
 
-        private static void RegisterClassProduct()
+        private static void RegisterClassNote()
         {
-            BsonClassMap.RegisterClassMap<Product>(cm =>
+            BsonClassMap.RegisterClassMap<Note>(cm =>
             {
                 cm.AutoMap();
                 //ignore these Fields, an equivalent of [BsonIgnore]
@@ -63,42 +59,42 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
                 cm.UnmapMember(c => c.RecurringCyclePeriod);
             });
         }
-        private static void RegisterClassProductCategory()
+        private static void RegisterClassNoteNotebook()
         {
-            BsonClassMap.RegisterClassMap<ProductCategory>(cm =>
+            BsonClassMap.RegisterClassMap<NoteNotebook>(cm =>
             {
                 cm.AutoMap();
-                cm.UnmapMember(c => c.ProductId);
+                cm.UnmapMember(c => c.NoteId);
             });
         }
-        private static void RegisterClassProductPicture()
+        private static void RegisterClassNotePicture()
         {
-            BsonClassMap.RegisterClassMap<ProductPicture>(cm =>
+            BsonClassMap.RegisterClassMap<NotePicture>(cm =>
             {
                 cm.AutoMap();
-                cm.UnmapMember(c => c.ProductId);
+                cm.UnmapMember(c => c.NoteId);
             });
 
         }
-        private static void RegisterClassProductTag()
+        private static void RegisterClassNoteTag()
         {
-            BsonClassMap.RegisterClassMap<ProductTag>(cm =>
+            BsonClassMap.RegisterClassMap<NoteTag>(cm =>
             {
                 cm.AutoMap();
-                cm.UnmapMember(c => c.ProductId);
+                cm.UnmapMember(c => c.NoteId);
             });
         }
-        private static void RegisterClassCustomer()
+        private static void RegisterClassUser()
         {
-            BsonClassMap.RegisterClassMap<Customer>(cm =>
+            BsonClassMap.RegisterClassMap<User>(cm =>
             {
                 cm.AutoMap();
                 cm.UnmapMember(c => c.PasswordFormat);
             });
         }
-        private static void RegisterClassCustomerAction()
+        private static void RegisterClassUserAction()
         {
-            BsonClassMap.RegisterClassMap<CustomerAction>(cm =>
+            BsonClassMap.RegisterClassMap<UserAction>(cm =>
             {
                 cm.AutoMap();
                 cm.UnmapMember(c => c.Condition);
@@ -107,31 +103,31 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
         }
         private static void RegisterClassActionCondition()
         {
-            BsonClassMap.RegisterClassMap<CustomerAction.ActionCondition>(cm =>
+            BsonClassMap.RegisterClassMap<UserAction.ActionCondition>(cm =>
             {
                 cm.AutoMap();
-                cm.UnmapMember(c => c.CustomerActionConditionType);
+                cm.UnmapMember(c => c.UserActionConditionType);
                 cm.UnmapMember(c => c.Condition);
             });
         }
-        private static void RegisterClassCustomerAttribute()
+        private static void RegisterClassUserAttribute()
         {
-            BsonClassMap.RegisterClassMap<CustomerAttribute>(cm =>
+            BsonClassMap.RegisterClassMap<UserAttribute>(cm =>
             {
                 cm.AutoMap();
             });
         }
-        private static void RegisterClassCustomerHistoryPassword()
+        private static void RegisterClassUserHistoryPassword()
         {
-            BsonClassMap.RegisterClassMap<CustomerHistoryPassword>(cm =>
+            BsonClassMap.RegisterClassMap<UserHistoryPassword>(cm =>
             {
                 cm.AutoMap();
                 cm.UnmapMember(c => c.PasswordFormat);
             });
         }
-        private static void RegisterClassCustomerReminder()
+        private static void RegisterClassUserReminder()
         {
-            BsonClassMap.RegisterClassMap<CustomerReminder>(cm =>
+            BsonClassMap.RegisterClassMap<UserReminder>(cm =>
             {
                 cm.AutoMap();
                 cm.UnmapMember(c => c.Condition);
@@ -140,28 +136,20 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
         }
         private static void RegisterClassReminderCondition()
         {
-            BsonClassMap.RegisterClassMap<CustomerReminder.ReminderCondition>(cm =>
+            BsonClassMap.RegisterClassMap<UserReminder.ReminderCondition>(cm =>
             {
                 cm.AutoMap();
                 cm.UnmapMember(c => c.ConditionType);
                 cm.UnmapMember(c => c.Condition);
             });
         }
-        private static void RegisterClassCustomerReminderHistory()
+        private static void RegisterClassUserReminderHistory()
         {
-            BsonClassMap.RegisterClassMap<CustomerReminderHistory>(cm =>
+            BsonClassMap.RegisterClassMap<UserReminderHistory>(cm =>
             {
                 cm.AutoMap();
                 cm.UnmapMember(c => c.ReminderRule);
                 cm.UnmapMember(c => c.HistoryStatus);
-            });
-        }
-        private static void RegisterClassCustomerRole()
-        {
-            BsonClassMap.RegisterClassMap<CustomerRole>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.CustomerId);
             });
         }
         private static void RegisterClassLog()
@@ -217,15 +205,6 @@ namespace ForeverNote.Core.Infrastructure.MongoDB
             {
                 cm.AutoMap();
                 cm.UnmapMember(c => c.Priority);
-            });
-        }
-        private static void RegisterClassDocument()
-        {
-            BsonClassMap.RegisterClassMap<Document>(cm =>
-            {
-                cm.AutoMap();
-                cm.UnmapMember(c => c.DocumentStatus);
-                cm.UnmapMember(c => c.Reference);
             });
         }
     }

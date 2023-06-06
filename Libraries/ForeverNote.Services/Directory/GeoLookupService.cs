@@ -1,4 +1,4 @@
-﻿//This product includes GeoLite2 data created by MaxMind, available from http://www.maxmind.com
+﻿//This note includes GeoLite2 data created by MaxMind, available from http://www.maxmind.com
 
 using ForeverNote.Core;
 using ForeverNote.Services.Logging;
@@ -38,7 +38,7 @@ namespace ForeverNote.Services.Directory
 
             try
             {
-                //This product includes GeoLite2 data created by MaxMind, available from http://www.maxmind.com
+                //This note includes GeoLite2 data created by MaxMind, available from http://www.maxmind.com
                 var databasePath = CommonHelper.MapPath("~/App_Data/GeoLite2-Country.mmdb");
                 var reader = new DatabaseReader(databasePath);
                 var omni = reader.Country(ipAddress);

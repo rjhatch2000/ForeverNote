@@ -1,5 +1,5 @@
 using ForeverNote.Core;
-using ForeverNote.Core.Domain.Customers;
+using ForeverNote.Core.Domain.Users;
 using ForeverNote.Core.Domain.Logging;
 using System;
 using System.Collections.Generic;
@@ -82,9 +82,9 @@ namespace ForeverNote.Services.Logging
         /// <param name="logLevel">Log level</param>
         /// <param name="shortMessage">The short message</param>
         /// <param name="fullMessage">The full message</param>
-        /// <param name="customer">The customer to associate log record with</param>
+        /// <param name="user">The user to associate log record with</param>
         /// <returns>A log item</returns>
-        public virtual Task<Log> InsertLog(LogLevel logLevel, string shortMessage, string fullMessage = "", Customer customer = null)
+        public virtual Task<Log> InsertLog(LogLevel logLevel, string shortMessage, string fullMessage = "", User user = null)
         {
             return null;
         }

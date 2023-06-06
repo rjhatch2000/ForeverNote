@@ -47,22 +47,22 @@ namespace ForeverNote.Services.Messages
         }
 
 
-        public virtual async Task<PopupActive> GetActivePopupByCustomerId(string customerId)
+        public virtual async Task<PopupActive> GetActivePopupByUserId(string userId)
         {
             var query = from c in _popupActiveRepository.Table
-                        where c.CustomerId == customerId
+                        where c.UserId == userId
                         orderby c.CreatedOnUtc
                         select c;
             return await query.FirstOrDefaultAsync();
         }
 
-        public virtual async Task MovepopupToArchive(string id, string customerId)
+        public virtual async Task MovepopupToArchive(string id, string userId)
         {
-            if (String.IsNullOrEmpty(customerId) || String.IsNullOrEmpty(id))
+            if (String.IsNullOrEmpty(userId) || String.IsNullOrEmpty(id))
                 return;
 
             var query = from c in _popupActiveRepository.Table
-                        where c.CustomerId == customerId && c.Id == id
+                        where c.UserId == userId && c.Id == id
                         select c;
 
             var popup = await query.FirstOrDefaultAsync();
@@ -73,8 +73,8 @@ namespace ForeverNote.Services.Messages
                     Body = popup.Body,
                     BACreatedOnUtc = popup.CreatedOnUtc,
                     CreatedOnUtc = DateTime.UtcNow,
-                    CustomerActionId = popup.CustomerActionId,
-                    CustomerId = popup.CustomerId,
+                    UserActionId = popup.UserActionId,
+                    UserId = popup.UserId,
                     PopupActiveId = popup.Id,
                     PopupTypeId = popup.PopupTypeId,
                     Name = popup.Name,

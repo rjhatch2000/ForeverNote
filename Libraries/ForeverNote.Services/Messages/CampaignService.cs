@@ -1,8 +1,8 @@
 ﻿using ForeverNote.Core;
 using ForeverNote.Core.Data;
-using ForeverNote.Core.Domain.Customers;
+using ForeverNote.Core.Domain.Users;
 using ForeverNote.Core.Domain.Messages;
-using ForeverNote.Services.Customers;
+using ForeverNote.Services.Users;
 using ForeverNote.Services.Events;
 using ForeverNote.Services.Localization;
 using ForeverNote.Services.Logging;
@@ -21,41 +21,38 @@ namespace ForeverNote.Services.Messages
     {
         private readonly IRepository<Campaign> _campaignRepository;
         private readonly IRepository<CampaignHistory> _campaignHistoryRepository;
-        private readonly IRepository<NewsLetterSubscription> _newsLetterSubscriptionRepository;
-        private readonly IRepository<Customer> _customerRepository;
+        private readonly IRepository<User> _userRepository;
         private readonly IEmailSender _emailSender;
         private readonly IMessageTokenProvider _messageTokenProvider;
         private readonly IQueuedEmailService _queuedEmailService;
-        private readonly ICustomerService _customerService;
+        private readonly IUserService _userService;
         private readonly IMediator _mediator;
-        private readonly ICustomerActivityService _customerActivityService;
+        private readonly IUserActivityService _userActivityService;
         private readonly ILocalizationService _localizationService;
         private readonly ILanguageService _languageService;
 
         public CampaignService(
             IRepository<Campaign> campaignRepository,
             IRepository<CampaignHistory> campaignHistoryRepository,
-            IRepository<NewsLetterSubscription> newsLetterSubscriptionRepository,
-            IRepository<Customer> customerRepository,
+            IRepository<User> userRepository,
             IEmailSender emailSender, IMessageTokenProvider messageTokenProvider,
             IQueuedEmailService queuedEmailService,
-            ICustomerService customerService,
+            IUserService userService,
             IMediator mediator,
-            ICustomerActivityService customerActivityService,
+            IUserActivityService userActivityService,
             ILocalizationService localizationService,
             ILanguageService languageService
         )
         {
             _campaignRepository = campaignRepository;
             _campaignHistoryRepository = campaignHistoryRepository;
-            _newsLetterSubscriptionRepository = newsLetterSubscriptionRepository;
-            _customerRepository = customerRepository;
+            _userRepository = userRepository;
             _emailSender = emailSender;
             _messageTokenProvider = messageTokenProvider;
             _queuedEmailService = queuedEmailService;
-            _customerService = customerService;
+            _userService = userService;
             _mediator = mediator;
-            _customerActivityService = customerActivityService;
+            _userActivityService = userActivityService;
             _localizationService = localizationService;
             _languageService = languageService;
         }
@@ -153,187 +150,18 @@ namespace ForeverNote.Services.Messages
                         select c;
             return await PagedList<CampaignHistory>.Create(query, pageIndex, pageSize);
         }
-        public virtual async Task<IPagedList<NewsLetterSubscription>> CustomerSubscriptions(Campaign campaign, int pageIndex = 0, int pageSize = int.MaxValue)
+
+        private class CampaignUserHelp
         {
-            if (campaign == null)
-                throw new ArgumentNullException("campaign");
-
-            var model = new PagedList<NewsLetterSubscription>();
-            if (campaign.CustomerCreatedDateFrom.HasValue || campaign.CustomerCreatedDateTo.HasValue ||
-                campaign.CustomerLastActivityDateFrom.HasValue || campaign.CustomerLastActivityDateTo.HasValue ||
-                campaign.CustomerLastPurchaseDateFrom.HasValue || campaign.CustomerLastPurchaseDateTo.HasValue ||
-                campaign.CustomerTags.Count > 0 || campaign.CustomerRoles.Count > 0)
+            public CampaignUserHelp()
             {
-
-                var query = from o in _newsLetterSubscriptionRepository.Table
-                            where o.Active && o.CustomerId != ""
-                            join c in _customerRepository.Table on o.CustomerId equals c.Id into joined
-                            from customers in joined
-                            select new CampaignCustomerHelp() {
-                                CustomerEmail = customers.Email,
-                                Email = o.Email,
-                                CustomerId = customers.Id,
-                                CreatedOnUtc = customers.CreatedOnUtc,
-                                CustomerTags = customers.CustomerTags,
-                                CustomerRoles = customers.CustomerRoles,
-                                NewsletterCategories = o.Categories,
-                                LastActivityDateUtc = customers.LastActivityDateUtc,
-                                LastPurchaseDateUtc = customers.LastPurchaseDateUtc,
-                                NewsLetterSubscriptionGuid = o.NewsLetterSubscriptionGuid
-                            };
-
-                //create date
-                if (campaign.CustomerCreatedDateFrom.HasValue)
-                    query = query.Where(x => x.CreatedOnUtc >= campaign.CustomerCreatedDateFrom.Value);
-                if (campaign.CustomerCreatedDateTo.HasValue)
-                    query = query.Where(x => x.CreatedOnUtc <= campaign.CustomerCreatedDateTo.Value);
-
-                //last activity
-                if (campaign.CustomerLastActivityDateFrom.HasValue)
-                    query = query.Where(x => x.LastActivityDateUtc >= campaign.CustomerLastActivityDateFrom.Value);
-                if (campaign.CustomerLastActivityDateTo.HasValue)
-                    query = query.Where(x => x.LastActivityDateUtc <= campaign.CustomerLastActivityDateTo.Value);
-
-                //last purchase
-                if (campaign.CustomerLastPurchaseDateFrom.HasValue)
-                    query = query.Where(x => x.LastPurchaseDateUtc >= campaign.CustomerLastPurchaseDateFrom.Value);
-                if (campaign.CustomerLastPurchaseDateTo.HasValue)
-                    query = query.Where(x => x.LastPurchaseDateUtc <= campaign.CustomerLastPurchaseDateTo.Value);
-
-                //tags
-                if (campaign.CustomerTags.Count > 0)
-                {
-                    foreach (var item in campaign.CustomerTags)
-                    {
-                        query = query.Where(x => x.CustomerTags.Contains(item));
-                    }
-                }
-                //roles
-                if (campaign.CustomerRoles.Count > 0)
-                {
-                    foreach (var item in campaign.CustomerRoles)
-                    {
-                        query = query.Where(x => x.CustomerRoles.Any(z => z.Id == item));
-                    }
-                }
-                //categories news
-                if (campaign.NewsletterCategories.Count > 0)
-                {
-                    foreach (var item in campaign.NewsletterCategories)
-                    {
-                        query = query.Where(x => x.NewsletterCategories.Contains(item));
-                    }
-                }
-                model = await PagedList<NewsLetterSubscription>.Create(query.Select(x => new NewsLetterSubscription() { CustomerId = x.CustomerId, Email = x.Email, NewsLetterSubscriptionGuid = x.NewsLetterSubscriptionGuid }), pageIndex, pageSize);
             }
-            else
-            {
-                var query = from o in _newsLetterSubscriptionRepository.Table
-                            where o.Active
-                            select o;
-
-                if (campaign.NewsletterCategories.Count > 0)
-                {
-                    foreach (var item in campaign.NewsletterCategories)
-                    {
-                        query = query.Where(x => x.Categories.Contains(item));
-                    }
-                }
-                model = await PagedList<NewsLetterSubscription>.Create(query, pageIndex, pageSize);
-            }
-
-            return await Task.FromResult(model);
-        }
-
-        private class CampaignCustomerHelp
-        {
-            public CampaignCustomerHelp()
-            {
-                CustomerRoles = new List<CustomerRole>();
-            }
-            public string CustomerId { get; set; }
-            public string CustomerEmail { get; set; }
+            public string UserId { get; set; }
+            public string UserEmail { get; set; }
             public string Email { get; set; }
             public DateTime CreatedOnUtc { get; set; }
             public DateTime LastActivityDateUtc { get; set; }
-            public DateTime? LastPurchaseDateUtc { get; set; }
-            public ICollection<string> CustomerTags { get; set; }
-            public ICollection<string> NewsletterCategories { get; set; }
-            public ICollection<CustomerRole> CustomerRoles { get; set; }
-            public Guid NewsLetterSubscriptionGuid { get; set; }
-        }
-
-        /// <summary>
-        /// Sends a campaign to specified emails
-        /// </summary>
-        /// <param name="campaign">Campaign</param>
-        /// <param name="emailAccount">Email account</param>
-        /// <param name="subscriptions">Subscriptions</param>
-        /// <returns>Total emails sent</returns>
-        public virtual async Task<int> SendCampaign(Campaign campaign, EmailAccount emailAccount,
-            IEnumerable<NewsLetterSubscription> subscriptions)
-        {
-            if (campaign == null)
-                throw new ArgumentNullException("campaign");
-
-            if (emailAccount == null)
-                throw new ArgumentNullException("emailAccount");
-
-            int totalEmailsSent = 0;
-            var language = await _languageService.GetLanguageById(campaign.LanguageId);
-            if (language == null)
-                language = (await _languageService.GetAllLanguages()).FirstOrDefault();
-
-            foreach (var subscription in subscriptions)
-            {
-                Customer customer = null;
-
-                if (!String.IsNullOrEmpty(subscription.CustomerId))
-                {
-                    customer = await _customerService.GetCustomerById(subscription.CustomerId);
-                }
-
-                if (customer == null)
-                {
-                    customer = await _customerService.GetCustomerByEmail(subscription.Email);
-                }
-
-                //ignore deleted or inactive customers when sending newsletter campaigns
-                if (customer != null && (!customer.Active || customer.Deleted))
-                    continue;
-
-                var liquidObject = new LiquidObject();
-
-                if (customer != null)
-                {
-                    await _messageTokenProvider.AddCustomerTokens(liquidObject, customer, language);
-                }
-
-                var body = LiquidExtensions.Render(liquidObject, campaign.Body);
-                var subject = LiquidExtensions.Render(liquidObject, campaign.Subject);
-
-                var email = new QueuedEmail {
-                    Priority = QueuedEmailPriority.Low,
-                    From = emailAccount.Email,
-                    FromName = emailAccount.DisplayName,
-                    To = subscription.Email,
-                    Subject = subject,
-                    Body = body,
-                    CreatedOnUtc = DateTime.UtcNow,
-                    EmailAccountId = emailAccount.Id
-                };
-                await _queuedEmailService.InsertQueuedEmail(email);
-                await InsertCampaignHistory(new CampaignHistory() { CampaignId = campaign.Id, CustomerId = subscription.CustomerId, Email = subscription.Email, CreatedDateUtc = DateTime.UtcNow });
-
-                //activity log
-                if (customer != null)
-                    await _customerActivityService.InsertActivity("CustomerReminder.SendCampaign", campaign.Id, _localizationService.GetResource("ActivityLog.SendCampaign"), customer, campaign.Name);
-                else
-                    await _customerActivityService.InsertActivity("CustomerReminder.SendCampaign", campaign.Id, _localizationService.GetResource("ActivityLog.SendCampaign"), campaign.Name + " - " + subscription.Email);
-
-                totalEmailsSent++;
-            }
-            return totalEmailsSent;
+            public ICollection<string> UserTags { get; set; }
         }
 
         /// <summary>
@@ -355,10 +183,10 @@ namespace ForeverNote.Services.Messages
                 language = (await _languageService.GetAllLanguages()).FirstOrDefault();
 
             var liquidObject = new LiquidObject();
-            var customer = await _customerService.GetCustomerByEmail(email);
-            if (customer != null)
+            var user = await _userService.GetUserByEmail(email);
+            if (user != null)
             {
-                await _messageTokenProvider.AddCustomerTokens(liquidObject, customer, language);
+                await _messageTokenProvider.AddUserTokens(liquidObject, user, language);
             }
 
             var body = LiquidExtensions.Render(liquidObject, campaign.Body);

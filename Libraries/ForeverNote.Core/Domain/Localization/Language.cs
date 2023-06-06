@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace ForeverNote.Core.Domain.Localization
 {
     /// <summary>

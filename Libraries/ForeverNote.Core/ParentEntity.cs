@@ -1,4 +1,5 @@
 using MongoDB.Bson;
+using System;
 
 namespace ForeverNote.Core
 {
@@ -23,5 +24,14 @@ namespace ForeverNote.Core
 
         private string _id;
 
+        /// <summary>
+        /// Gets or sets the date and time of instance creation
+        /// </summary>
+        public DateTime CreatedOnUtc { get; set; }
+
+        /// <summary>
+        /// Gets or sets the date and time of instance updated
+        /// </summary>
+        public DateTime UpdatedOnUtc { get; set; }
     }
 }

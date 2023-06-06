@@ -1,6 +1,5 @@
 ﻿using ForeverNote.Core;
 using ForeverNote.Core.Domain.PushNotifications;
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -23,8 +22,8 @@ namespace ForeverNote.Services.PushNotifications
         /// <summary>
         /// Gets push receiver
         /// </summary>
-        /// <param name="CustomerId"></param>
-        Task<PushRegistration> GetPushReceiverByCustomerId(string CustomerId);
+        /// <param name="UserId"></param>
+        Task<PushRegistration> GetPushReceiverByUserId(string UserId);
 
         /// <summary>
         /// Gets all push receivers
@@ -38,12 +37,12 @@ namespace ForeverNote.Services.PushNotifications
         Task<PushRegistration> GetPushReceiver(string Id);
 
         /// <summary>
-        /// Gets number of customers that accepted push notifications permission popup
+        /// Gets number of users that accepted push notifications permission popup
         /// </summary>
         Task<int> GetAllowedReceivers();
 
         /// <summary>
-        /// Gets number of customers that denied push notifications permission popup
+        /// Gets number of users that denied push notifications permission popup
         /// </summary>
         Task<int> GetDeniedReceivers();
 
@@ -86,9 +85,9 @@ namespace ForeverNote.Services.PushNotifications
         /// <param name="title"></param>
         /// <param name="text"></param>
         /// <param name="pictureUrl"></param>
-        /// <param name="customerId"></param>
+        /// <param name="userId"></param>
         /// <param name="clickUrl"></param>
         /// <returns>Bool indicating whether message was sent successfully and string result to display</returns>
-        Task<(bool, string)> SendPushNotification(string title, string text, string pictureUrl, string customerId, string clickUrl);
+        Task<(bool, string)> SendPushNotification(string title, string text, string pictureUrl, string userId, string clickUrl);
     }
 }

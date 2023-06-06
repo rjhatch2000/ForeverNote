@@ -1,5 +1,5 @@
-﻿using ForeverNote.Core.Domain.Customers;
-using ForeverNote.Services.Customers;
+﻿using ForeverNote.Core.Domain.Users;
+using ForeverNote.Services.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
@@ -12,26 +12,26 @@ namespace ForeverNote.Services.Authentication
     public partial class ApiAuthenticationService : IApiAuthenticationService
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly ICustomerService _customerService;
+        private readonly IUserService _userService;
         private readonly IUserApiService _userApiService;
 
-        private Customer _cachedCustomer;
+        private User _cachedUser;
 
         private string _errorMessage;
         private string _email;
 
         public ApiAuthenticationService(IHttpContextAccessor httpContextAccessor,
-            ICustomerService customerService, IUserApiService userApiService)
+            IUserService userService, IUserApiService userApiService)
         {
             _httpContextAccessor = httpContextAccessor;
-            _customerService = customerService;
+            _userService = userService;
             _userApiService = userApiService;
         }
 
         /// <summary>
         /// Valid
         /// </summary>
-        /// <param name="customer">Customer</param>
+        /// <param name="user">User</param>
         public virtual async Task<bool> Valid(TokenValidatedContext context)
         {
             _email = context.Principal.Claims.ToList().FirstOrDefault(x => x.Type == "Email")?.Value;
@@ -41,10 +41,10 @@ namespace ForeverNote.Services.Authentication
                 _errorMessage = "Email not exists in the context";
                 return await Task.FromResult(false);
             }
-            var customer = await _customerService.GetCustomerByEmail(_email);
-            if (customer == null || !customer.Active || customer.Deleted)
+            var user = await _userService.GetUserByEmail(_email);
+            if (user == null || !user.Active || user.Deleted)
             {
-                _errorMessage = "Email not exists/or not active in the customer table";
+                _errorMessage = "Email not exists/or not active in the user table";
                 return await Task.FromResult(false);
             }
             var userapi = await _userApiService.GetUserByEmail(_email);
@@ -73,9 +73,9 @@ namespace ForeverNote.Services.Authentication
             if (string.IsNullOrEmpty(email))
                 throw new ArgumentNullException(nameof(email));
 
-            var customer = await _customerService.GetCustomerByEmail(email);
-            if (customer != null)
-                _cachedCustomer = customer;
+            var user = await _userService.GetUserByEmail(email);
+            if (user != null)
+                _cachedUser = user;
         }
 
 
@@ -89,22 +89,22 @@ namespace ForeverNote.Services.Authentication
         }
 
         /// <summary>
-        /// Get authenticated customer
+        /// Get authenticated user
         /// </summary>
-        /// <returns>Customer</returns>
-        public virtual async Task<Customer> GetAuthenticatedCustomer()
+        /// <returns>User</returns>
+        public virtual async Task<User> GetAuthenticatedUser()
         {
-            //whether there is a cached customer
-            if (_cachedCustomer != null)
-                return _cachedCustomer;
+            //whether there is a cached user
+            if (_cachedUser != null)
+                return _cachedUser;
 
-            Customer customer = null;
+            User user = null;
 
             if (_httpContextAccessor.HttpContext.Request.Path.Value.ToLowerInvariant().Contains("/api/token/create"))
             {
-                customer = await _customerService.GetCustomerBySystemName(SystemCustomerNames.BackgroundTask);
-                if (customer != null)
-                    return customer;
+                user = await _userService.GetUserBySystemName(SystemUserNames.BackgroundTask);
+                if (user != null)
+                    return user;
             }
 
             //try to get authenticated user identity
@@ -116,20 +116,20 @@ namespace ForeverNote.Services.Authentication
             if (!authenticateResult.Succeeded)
                 return null;
 
-            //try to get customer by email
+            //try to get user by email
             var emailClaim = authenticateResult.Principal.Claims.FirstOrDefault(claim => claim.Type == "Email");
             if (emailClaim != null)
-                customer = await _customerService.GetCustomerByEmail(emailClaim.Value);
+                user = await _userService.GetUserByEmail(emailClaim.Value);
 
 
-            //whether the found customer is available
-            if (customer == null || !customer.Active || customer.Deleted || !customer.IsRegistered())
+            //whether the found user is available
+            if (user == null || !user.Active || user.Deleted)
                 return null;
 
-            //cache authenticated customer
-            _cachedCustomer = customer;
+            //cache authenticated user
+            _cachedUser = user;
 
-            return _cachedCustomer;
+            return _cachedUser;
 
         }
 

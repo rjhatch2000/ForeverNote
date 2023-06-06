@@ -2,15 +2,16 @@ using ForeverNote.Core;
 using ForeverNote.Core.Data;
 using ForeverNote.Core.Domain;
 using ForeverNote.Core.Domain.AdminSearch;
-using ForeverNote.Core.Domain.Affiliates;
 using ForeverNote.Core.Domain.Catalog;
 using ForeverNote.Core.Domain.Common;
 using ForeverNote.Core.Domain.Configuration;
-using ForeverNote.Core.Domain.Customers;
+using ForeverNote.Core.Domain.Users;
 using ForeverNote.Core.Domain.Localization;
 using ForeverNote.Core.Domain.Logging;
 using ForeverNote.Core.Domain.Media;
 using ForeverNote.Core.Domain.Messages;
+using ForeverNote.Core.Domain.Notes;
+using ForeverNote.Core.Domain.Notebooks;
 using ForeverNote.Core.Domain.Orders;
 using ForeverNote.Core.Domain.PushNotifications;
 using ForeverNote.Core.Domain.Security;
@@ -18,7 +19,7 @@ using ForeverNote.Core.Domain.Tasks;
 using ForeverNote.Core.Infrastructure;
 using ForeverNote.Services.Common;
 using ForeverNote.Services.Configuration;
-using ForeverNote.Services.Customers;
+using ForeverNote.Services.Users;
 using ForeverNote.Services.Helpers;
 using ForeverNote.Services.Localization;
 using ForeverNote.Services.Media;
@@ -37,42 +38,33 @@ namespace ForeverNote.Services.Installation
     {
         #region Fields
 
-        private readonly IRepository<Core.Domain.Common.ForeverNoteVersion> _versionRepository;
-        private readonly IRepository<Affiliate> _affiliateRepository;
+        private readonly IRepository<ForeverNoteDatabaseVersion> _databaseVersionRepository;
         private readonly IRepository<CampaignHistory> _campaignHistoryRepository;
         private readonly IRepository<Language> _languageRepository;
         private readonly IRepository<LocaleStringResource> _lsrRepository;
         private readonly IRepository<Log> _logRepository;
-        private readonly IRepository<Customer> _customerRepository;
-        private readonly IRepository<CustomerRole> _customerRoleRepository;
-        private readonly IRepository<CustomerRoleProduct> _customerRoleProductRepository;
-        private readonly IRepository<CustomerProduct> _customerProductRepository;
-        private readonly IRepository<CustomerProductPrice> _customerProductPriceRepository;
-        private readonly IRepository<CustomerTagProduct> _customerTagProductRepository;
-        private readonly IRepository<CustomerHistoryPassword> _customerHistoryPasswordRepository;
-        private readonly IRepository<CustomerNote> _customerNoteRepository;
+        private readonly IRepository<User> _userRepository;
+        private readonly IRepository<UserTagNote> _userTagNoteRepository;
+        private readonly IRepository<UserHistoryPassword> _userHistoryPasswordRepository;
         private readonly IRepository<UserApi> _userapiRepository;
-        private readonly IRepository<Category> _categoryRepository;
-        private readonly IRepository<Product> _productRepository;
+        private readonly IRepository<Notebook> _notebookRepository;
+        private readonly IRepository<Note> _noteRepository;
         private readonly IRepository<EmailAccount> _emailAccountRepository;
         private readonly IRepository<MessageTemplate> _messageTemplateRepository;
-        private readonly IRepository<NewsLetterSubscription> _newslettersubscriptionRepository;
         private readonly IRepository<ActivityLogType> _activityLogTypeRepository;
-        private readonly IRepository<ProductTag> _productTagRepository;
-        private readonly IRepository<CategoryTemplate> _categoryTemplateRepository;
+        private readonly IRepository<NoteTag> _noteTagRepository;
         private readonly IRepository<ScheduleTask> _scheduleTaskRepository;
         private readonly IRepository<SearchTerm> _searchtermRepository;
         private readonly IRepository<Setting> _settingRepository;
-        private readonly IRepository<PermissionRecord> _permissionRepository;
         private readonly IRepository<ExternalAuthenticationRecord> _externalAuthenticationRepository;
         private readonly IRepository<ReturnRequestAction> _returnRequestActionRepository;
         private readonly IRepository<ContactUs> _contactUsRepository;
-        private readonly IRepository<CustomerAction> _customerAction;
-        private readonly IRepository<CustomerActionType> _customerActionType;
-        private readonly IRepository<CustomerActionHistory> _customerActionHistory;
+        private readonly IRepository<UserAction> _userAction;
+        private readonly IRepository<UserActionType> _userActionType;
+        private readonly IRepository<UserActionHistory> _userActionHistory;
         private readonly IRepository<PopupArchive> _popupArchive;
-        private readonly IRepository<CustomerReminderHistory> _customerReminderHistoryRepository;
-        private readonly IRepository<RecentlyViewedProduct> _recentlyViewedProductRepository;
+        private readonly IRepository<UserReminderHistory> _userReminderHistoryRepository;
+        private readonly IRepository<RecentlyViewedNote> _recentlyViewedNoteRepository;
         private readonly IGenericAttributeService _genericAttributeService;
         private readonly IWebHelper _webHelper;
         private readonly IWebHostEnvironment _hostingEnvironment;
@@ -84,41 +76,32 @@ namespace ForeverNote.Services.Installation
 
         public CodeFirstInstallationService(IServiceProvider serviceProvider)
         {
-            _versionRepository = serviceProvider.GetRequiredService<IRepository<Core.Domain.Common.ForeverNoteVersion>>();
-            _affiliateRepository = serviceProvider.GetRequiredService<IRepository<Affiliate>>();
+            _databaseVersionRepository = serviceProvider.GetRequiredService<IRepository<ForeverNoteDatabaseVersion>>();
             _campaignHistoryRepository = serviceProvider.GetRequiredService<IRepository<CampaignHistory>>();
             _languageRepository = serviceProvider.GetRequiredService<IRepository<Language>>();
             _lsrRepository = serviceProvider.GetRequiredService<IRepository<LocaleStringResource>>();
             _logRepository = serviceProvider.GetRequiredService<IRepository<Log>>();
-            _customerRepository = serviceProvider.GetRequiredService<IRepository<Customer>>();
-            _customerRoleRepository = serviceProvider.GetRequiredService<IRepository<CustomerRole>>();
-            _customerProductRepository = serviceProvider.GetRequiredService<IRepository<CustomerProduct>>();
-            _customerProductPriceRepository = serviceProvider.GetRequiredService<IRepository<CustomerProductPrice>>();
-            _customerRoleProductRepository = serviceProvider.GetRequiredService<IRepository<CustomerRoleProduct>>();
-            _customerTagProductRepository = serviceProvider.GetRequiredService<IRepository<CustomerTagProduct>>();
-            _customerHistoryPasswordRepository = serviceProvider.GetRequiredService<IRepository<CustomerHistoryPassword>>();
-            _customerNoteRepository = serviceProvider.GetRequiredService<IRepository<CustomerNote>>();
+            _userRepository = serviceProvider.GetRequiredService<IRepository<User>>();
+            _userTagNoteRepository = serviceProvider.GetRequiredService<IRepository<UserTagNote>>();
+            _userHistoryPasswordRepository = serviceProvider.GetRequiredService<IRepository<UserHistoryPassword>>();
             _userapiRepository = serviceProvider.GetRequiredService<IRepository<UserApi>>();
-            _categoryRepository = serviceProvider.GetRequiredService<IRepository<Category>>();
-            _productRepository = serviceProvider.GetRequiredService<IRepository<Product>>();
+            _notebookRepository = serviceProvider.GetRequiredService<IRepository<Notebook>>();
+            _noteRepository = serviceProvider.GetRequiredService<IRepository<Note>>();
             _emailAccountRepository = serviceProvider.GetRequiredService<IRepository<EmailAccount>>();
             _messageTemplateRepository = serviceProvider.GetRequiredService<IRepository<MessageTemplate>>();
-            _newslettersubscriptionRepository = serviceProvider.GetRequiredService<IRepository<NewsLetterSubscription>>();
             _activityLogTypeRepository = serviceProvider.GetRequiredService<IRepository<ActivityLogType>>();
-            _productTagRepository = serviceProvider.GetRequiredService<IRepository<ProductTag>>();
-            _recentlyViewedProductRepository = serviceProvider.GetRequiredService<IRepository<RecentlyViewedProduct>>();
-            _categoryTemplateRepository = serviceProvider.GetRequiredService<IRepository<CategoryTemplate>>();
+            _noteTagRepository = serviceProvider.GetRequiredService<IRepository<NoteTag>>();
+            _recentlyViewedNoteRepository = serviceProvider.GetRequiredService<IRepository<RecentlyViewedNote>>();
             _scheduleTaskRepository = serviceProvider.GetRequiredService<IRepository<ScheduleTask>>();
             _searchtermRepository = serviceProvider.GetRequiredService<IRepository<SearchTerm>>();
             _settingRepository = serviceProvider.GetRequiredService<IRepository<Setting>>();
-            _permissionRepository = serviceProvider.GetRequiredService<IRepository<PermissionRecord>>();
             _externalAuthenticationRepository = serviceProvider.GetRequiredService<IRepository<ExternalAuthenticationRecord>>();
             _contactUsRepository = serviceProvider.GetRequiredService<IRepository<ContactUs>>();
             _returnRequestActionRepository = serviceProvider.GetRequiredService<IRepository<ReturnRequestAction>>();
-            _customerAction = serviceProvider.GetRequiredService<IRepository<CustomerAction>>();
-            _customerActionType = serviceProvider.GetRequiredService<IRepository<CustomerActionType>>();
-            _customerActionHistory = serviceProvider.GetRequiredService<IRepository<CustomerActionHistory>>();
-            _customerReminderHistoryRepository = serviceProvider.GetRequiredService<IRepository<CustomerReminderHistory>>();
+            _userAction = serviceProvider.GetRequiredService<IRepository<UserAction>>();
+            _userActionType = serviceProvider.GetRequiredService<IRepository<UserActionType>>();
+            _userActionHistory = serviceProvider.GetRequiredService<IRepository<UserActionHistory>>();
+            _userReminderHistoryRepository = serviceProvider.GetRequiredService<IRepository<UserReminderHistory>>();
             _popupArchive = serviceProvider.GetRequiredService<IRepository<PopupArchive>>();
             _genericAttributeService = serviceProvider.GetRequiredService<IGenericAttributeService>();
             _webHelper = serviceProvider.GetRequiredService<IWebHelper>();
@@ -138,10 +121,11 @@ namespace ForeverNote.Services.Installation
 
         protected virtual async Task InstallVersion()
         {
-            var version = new Core.Domain.Common.ForeverNoteVersion {
-                DataBaseVersion = Core.ForeverNoteVersion.CurrentVersion
+            var version = new ForeverNoteDatabaseVersion
+            {
+                Version = Core.ForeverNoteVersion.CurrentVersion
             };
-            await _versionRepository.InsertAsync(version);
+            await _databaseVersionRepository.InsertAsync(version);
         }
 
         protected virtual async Task InstallLanguages()
@@ -172,59 +156,11 @@ namespace ForeverNote.Services.Installation
 
         }
 
-        protected virtual async Task InstallCustomersAndUsers(string defaultUserEmail, string defaultUserPassword)
+        protected virtual async Task InstallUsersAndUsers(string defaultUserEmail, string defaultUserPassword)
         {
-            var crAdministrators = new CustomerRole {
-                Name = "Administrators",
-                Active = true,
-                IsSystemRole = true,
-                SystemName = SystemCustomerRoleNames.Administrators,
-            };
-            await _customerRoleRepository.InsertAsync(crAdministrators);
-
-            var crForumModerators = new CustomerRole {
-                Name = "Forum Moderators",
-                Active = true,
-                IsSystemRole = true,
-                SystemName = SystemCustomerRoleNames.ForumModerators,
-            };
-            await _customerRoleRepository.InsertAsync(crForumModerators);
-
-            var crRegistered = new CustomerRole {
-                Name = "Registered",
-                Active = true,
-                IsSystemRole = true,
-                SystemName = SystemCustomerRoleNames.Registered,
-            };
-            await _customerRoleRepository.InsertAsync(crRegistered);
-
-            var crGuests = new CustomerRole {
-                Name = "Guests",
-                Active = true,
-                IsSystemRole = true,
-                SystemName = SystemCustomerRoleNames.Guests,
-            };
-            await _customerRoleRepository.InsertAsync(crGuests);
-
-            var crVendors = new CustomerRole {
-                Name = "Vendors",
-                Active = true,
-                IsSystemRole = true,
-                SystemName = SystemCustomerRoleNames.Vendors,
-            };
-            await _customerRoleRepository.InsertAsync(crVendors);
-
-            var crStaff = new CustomerRole {
-                Name = "Staff",
-                Active = true,
-                IsSystemRole = true,
-                SystemName = SystemCustomerRoleNames.Staff,
-            };
-            await _customerRoleRepository.InsertAsync(crStaff);
-
             //admin user
-            var adminUser = new Customer {
-                CustomerGuid = Guid.NewGuid(),
+            var adminUser = new User {
+                UserGuid = Guid.NewGuid(),
                 Email = defaultUserEmail,
                 Username = defaultUserEmail,
                 Password = defaultUserPassword,
@@ -235,103 +171,80 @@ namespace ForeverNote.Services.Installation
                 LastActivityDateUtc = DateTime.UtcNow,
                 PasswordChangeDateUtc = DateTime.UtcNow,
             };
-            adminUser.CustomerRoles.Add(crAdministrators);
-            adminUser.CustomerRoles.Add(crForumModerators);
-            adminUser.CustomerRoles.Add(crRegistered);
-            await _customerRepository.InsertAsync(adminUser);
+            await _userRepository.InsertAsync(adminUser);
 
-            //set default customer name
-            await _genericAttributeService.SaveAttribute(adminUser, SystemCustomerAttributeNames.FirstName, "John");
-            await _genericAttributeService.SaveAttribute(adminUser, SystemCustomerAttributeNames.LastName, "Smith");
-
-
-            //search engine (crawler) built-in user
-            var searchEngineUser = new Customer {
-                Email = "builtin@search_engine_record.com",
-                CustomerGuid = Guid.NewGuid(),
-                PasswordFormat = PasswordFormat.Clear,
-                AdminComment = "Built-in system guest record used for requests from search engines.",
-                Active = true,
-                IsSystemAccount = true,
-                SystemName = SystemCustomerNames.SearchEngine,
-                CreatedOnUtc = DateTime.UtcNow,
-                LastActivityDateUtc = DateTime.UtcNow,
-            };
-            searchEngineUser.CustomerRoles.Add(crGuests);
-            await _customerRepository.InsertAsync(searchEngineUser);
-
+            //set default user name
+            await _genericAttributeService.SaveAttribute(adminUser, SystemUserAttributeNames.FirstName, "John");
+            await _genericAttributeService.SaveAttribute(adminUser, SystemUserAttributeNames.LastName, "Smith");
 
             //built-in user for background tasks
-            var backgroundTaskUser = new Customer {
+            var backgroundTaskUser = new User {
                 Email = "builtin@background-task-record.com",
-                CustomerGuid = Guid.NewGuid(),
+                UserGuid = Guid.NewGuid(),
                 PasswordFormat = PasswordFormat.Clear,
-                AdminComment = "Built-in system record used for background tasks.",
                 Active = true,
                 IsSystemAccount = true,
-                SystemName = SystemCustomerNames.BackgroundTask,
+                SystemName = SystemUserNames.BackgroundTask,
                 CreatedOnUtc = DateTime.UtcNow,
                 LastActivityDateUtc = DateTime.UtcNow,
             };
-            backgroundTaskUser.CustomerRoles.Add(crGuests);
-            await _customerRepository.InsertAsync(backgroundTaskUser);
-
+            await _userRepository.InsertAsync(backgroundTaskUser);
         }
 
-        protected virtual async Task HashDefaultCustomerPassword(string defaultUserEmail, string defaultUserPassword)
+        protected virtual async Task HashDefaultUserPassword(string defaultUserEmail, string defaultUserPassword)
         {
-            var customerRegistrationService = _serviceProvider.GetRequiredService<ICustomerRegistrationService>();
-            await customerRegistrationService.ChangePassword(new ChangePasswordRequest(defaultUserEmail, false, PasswordFormat.Hashed, defaultUserPassword));
+            var userRegistrationService = _serviceProvider.GetRequiredService<IUserRegistrationService>();
+            await userRegistrationService.ChangePassword(new ChangePasswordRequest(defaultUserEmail, false, PasswordFormat.Hashed, defaultUserPassword));
         }
 
-        protected virtual async Task InstallCustomerAction()
+        protected virtual async Task InstallUserAction()
         {
-            var customerActionType = new List<CustomerActionType>()
+            var userActionType = new List<UserActionType>()
             {
-                new CustomerActionType()
+                new UserActionType()
                 {
                     Name = "Add to cart",
                     SystemKeyword = "AddToCart",
                     Enabled = false,
                     ConditionType = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13 }
                 },
-                new CustomerActionType()
+                new UserActionType()
                 {
                     Name = "Add order",
                     SystemKeyword = "AddOrder",
                     Enabled = false,
                     ConditionType = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13 }
                 },
-                new CustomerActionType()
+                new UserActionType()
                 {
                     Name = "Paid order",
                     SystemKeyword = "PaidOrder",
                     Enabled = false,
                     ConditionType = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13 }
                 },
-                new CustomerActionType()
+                new UserActionType()
                 {
                     Name = "Viewed",
                     SystemKeyword = "Viewed",
                     Enabled = false,
                     ConditionType = {1, 2, 3, 7, 8, 9, 10, 13}
                 },
-                new CustomerActionType()
+                new UserActionType()
                 {
                     Name = "Url",
                     SystemKeyword = "Url",
                     Enabled = false,
                     ConditionType = {7, 8, 9, 10, 11, 12, 13}
                 },
-                new CustomerActionType()
+                new UserActionType()
                 {
-                    Name = "Customer Registration",
+                    Name = "User Registration",
                     SystemKeyword = "Registration",
                     Enabled = false,
                     ConditionType = {7, 8, 9, 10, 13}
                 }
             };
-            await _customerActionType.InsertAsync(customerActionType);
+            await _userActionType.InsertAsync(userActionType);
 
         }
 
@@ -360,33 +273,33 @@ namespace ForeverNote.Services.Installation
             if (eaGeneral == null)
                 throw new Exception("Default email account cannot be loaded");
 
-            var OrderProducts = File.ReadAllText(CommonHelper.MapPath("~/App_Data/Upgrade/Order.Products.txt"));
-            var OrderVendorProducts = File.ReadAllText(CommonHelper.MapPath("~/App_Data/Upgrade/Order.VendorProducts.txt"));
-            var ShipmentProducts = File.ReadAllText(CommonHelper.MapPath("~/App_Data/Upgrade/Shipment.Products.txt"));
+            var OrderNotes = File.ReadAllText(CommonHelper.MapPath("~/App_Data/Upgrade/Order.Notes.txt"));
+            var OrderVendorNotes = File.ReadAllText(CommonHelper.MapPath("~/App_Data/Upgrade/Order.VendorNotes.txt"));
+            var ShipmentNotes = File.ReadAllText(CommonHelper.MapPath("~/App_Data/Upgrade/Shipment.Notes.txt"));
 
             var messageTemplates = new List<MessageTemplate>
                                {
                                     new MessageTemplate
                                        {
-                                           Name = "AuctionEnded.CustomerNotificationWin",
+                                           Name = "AuctionEnded.UserNotificationWin",
                                            Subject = "{{Store.Name}}. Auction ended.",
-                                           Body = "<p>Hello, {{Customer.FullName}}!</p><p></p><p>At {{Auctions.EndTime}} you have won <a href=\"{{Store.URL}}{{Auctions.ProductSeName}}\">{{Auctions.ProductName}}</a> for {{Auctions.Price}}. Visit  <a href=\"{{Store.URL}}/cart\">cart</a> to finish checkout process. </p>",
+                                           Body = "<p>Hello, {{User.FullName}}!</p><p></p><p>At {{Auctions.EndTime}} you have won <a href=\"{{Store.URL}}{{Auctions.NoteSeName}}\">{{Auctions.NoteName}}</a> for {{Auctions.Price}}. Visit  <a href=\"{{Store.URL}}/cart\">cart</a> to finish checkout process. </p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                     new MessageTemplate
                                             {
-                                                Name = "AuctionEnded.CustomerNotificationLost",
+                                                Name = "AuctionEnded.UserNotificationLost",
                                                 Subject = "{{Store.Name}}. Auction ended.",
-                                                Body = "<p>Hello, {{Customer.FullName}}!</p><p></p><p>Unfortunately you did not win the bid {{Auctions.ProductName}}</p> <p>End price:  {{Auctions.Price}} </p> <p>End date auction {{Auctions.EndTime}} </p>",
+                                                Body = "<p>Hello, {{User.FullName}}!</p><p></p><p>Unfortunately you did not win the bid {{Auctions.NoteName}}</p> <p>End price:  {{Auctions.Price}} </p> <p>End date auction {{Auctions.EndTime}} </p>",
                                                 IsActive = true,
                                                 EmailAccountId = eaGeneral.Id,
                                             },
                                     new MessageTemplate
                                             {
-                                                Name = "AuctionEnded.CustomerNotificationBin",
+                                                Name = "AuctionEnded.UserNotificationBin",
                                                 Subject = "{{Store.Name}}. Auction ended.",
-                                                Body = "<p>Hello, {{Customer.FullName}}!</p><p></p><p>Unfortunately you did not win the bid {{Product.Name}}</p> <p>Product was bought by option Buy it now for price: {{Product.Price}} </p>",
+                                                Body = "<p>Hello, {{User.FullName}}!</p><p></p><p>Unfortunately you did not win the bid {{Note.Name}}</p> <p>Note was bought by option Buy it now for price: {{Note.Price}} </p>",
                                                 IsActive = true,
                                                 EmailAccountId = eaGeneral.Id,
                                             },
@@ -394,23 +307,23 @@ namespace ForeverNote.Services.Installation
                                        {
                                            Name = "AuctionEnded.StoreOwnerNotification",
                                            Subject = "{{Store.Name}}. Auction ended.",
-                                           Body = "<p>At {{Auctions.EndTime}} {{Customer.FullName}} have won <a href=\"{{Store.URL}}{{Auctions.ProductSeName}}\">{{Auctions.ProductName}}</a> for {{Auctions.Price}}.</p>",
+                                           Body = "<p>At {{Auctions.EndTime}} {{User.FullName}} have won <a href=\"{{Store.URL}}{{Auctions.NoteSeName}}\">{{Auctions.NoteName}}</a> for {{Auctions.Price}}.</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                     new MessageTemplate
                                        {
                                            Name = "AuctionExpired.StoreOwnerNotification",
-                                           Subject = "Your auction to product {{Product.Name}}  has expired.",
-                                           Body = "Hello, <br> Your auction to product {{Product.Name}} has expired without bid.",
+                                           Subject = "Your auction to note {{Note.Name}}  has expired.",
+                                           Body = "Hello, <br> Your auction to note {{Note.Name}} has expired without bid.",
                                            IsActive = false,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                     new MessageTemplate
                                        {
-                                           Name = "BidUp.CustomerNotification",
+                                           Name = "BidUp.UserNotification",
                                            Subject = "{{Store.Name}}. Your offer has been outbid.",
-                                           Body = "<p>Hi {{Customer.FullName}}!</p><p>Your offer for product <a href=\"{{Store.URL}}{{Auctions.ProductSeName}}\">{{Auctions.ProductName}}</a> has been outbid. Your price was {{Auctions.Price}}.<br />\r\nRaise a price by raising one's offer. Auction will be ended on {{Auctions.EndTime}}</p>",
+                                           Body = "<p>Hi {{User.FullName}}!</p><p>Your offer for note <a href=\"{{Store.URL}}{{Auctions.NoteSeName}}\">{{Auctions.NoteName}}</a> has been outbid. Your price was {{Auctions.Price}}.<br />\r\nRaise a price by raising one's offer. Auction will be ended on {{Auctions.EndTime}}</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
@@ -432,39 +345,39 @@ namespace ForeverNote.Services.Installation
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "Customer.BackInStock",
+                                           Name = "User.BackInStock",
                                            Subject = "{{Store.Name}}. Back in stock notification",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Customer.FullName}}, <br />\r\nProduct <a target=\"_blank\" href=\"{{BackInStockSubscription.ProductUrl}}\">{{BackInStockSubscription.ProductName}}</a> is in stock.</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{User.FullName}}, <br />\r\nNote <a target=\"_blank\" href=\"{{BackInStockSubscription.NoteUrl}}\">{{BackInStockSubscription.NoteName}}</a> is in stock.</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "CustomerDelete.StoreOwnerNotification",
-                                           Subject = "{{Store.Name}}. Customer has been deleted.",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> ,<br />\r\n{{Customer.FullName}} ({{Customer.Email}}) has just deleted from your database. </p>",
+                                           Name = "UserDelete.StoreOwnerNotification",
+                                           Subject = "{{Store.Name}}. User has been deleted.",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> ,<br />\r\n{{User.FullName}} ({{User.Email}}) has just deleted from your database. </p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "Customer.EmailTokenValidationMessage",
+                                           Name = "User.EmailTokenValidationMessage",
                                            Subject = "{{Store.Name}} - Email Verification Code",
-                                           Body = "Hello {{Customer.FullName}}, <br /><br />\r\n Enter this 6 digit code on the sign in page to confirm your identity:<br /><br /> \r\n <b>{{AdditionalTokens[\"Token\"]}}</b><br /><br />\r\n Yours securely, <br /> \r\n Team",
+                                           Body = "Hello {{User.FullName}}, <br /><br />\r\n Enter this 6 digit code on the sign in page to confirm your identity:<br /><br /> \r\n <b>{{AdditionalTokens[\"Token\"]}}</b><br /><br />\r\n Yours securely, <br /> \r\n Team",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "Customer.EmailValidationMessage",
+                                           Name = "User.EmailValidationMessage",
                                            Subject = "{{Store.Name}}. Email validation",
-                                           Body = "<a href=\"{{Store.URL}}\">{{Store.Name}}</a>  <br />\r\n  <br />\r\n  To activate your account <a href=\"{{Customer.AccountActivationURL}}\">click here</a>.     <br />\r\n  <br />\r\n  {{Store.Name}}",
+                                           Body = "<a href=\"{{Store.URL}}\">{{Store.Name}}</a>  <br />\r\n  <br />\r\n  To activate your account <a href=\"{{User.AccountActivationURL}}\">click here</a>.     <br />\r\n  <br />\r\n  {{Store.Name}}",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "Customer.NewPM",
+                                           Name = "User.NewPM",
                                            Subject = "{{Store.Name}}. You have received a new private message",
                                            Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nYou have received a new private message.</p>",
                                            IsActive = true,
@@ -472,17 +385,17 @@ namespace ForeverNote.Services.Installation
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "Customer.PasswordRecovery",
+                                           Name = "User.PasswordRecovery",
                                            Subject = "{{Store.Name}}. Password recovery",
-                                           Body = "<a href=\"{{Store.URL}}\">{{Store.Name}}</a>  <br />\r\n  <br />\r\n  To change your password <a href=\"{{Customer.PasswordRecoveryURL}}\">click here</a>.     <br />\r\n  <br />\r\n  {{Store.Name}}",
+                                           Body = "<a href=\"{{Store.URL}}\">{{Store.Name}}</a>  <br />\r\n  <br />\r\n  To change your password <a href=\"{{User.PasswordRecoveryURL}}\">click here</a>.     <br />\r\n  <br />\r\n  {{Store.Name}}",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "Customer.WelcomeMessage",
+                                           Name = "User.WelcomeMessage",
                                            Subject = "Welcome to {{Store.Name}}",
-                                           Body = "We welcome you to <a href=\"{{Store.URL}}\"> {{Store.Name}}</a>.<br />\r\n<br />\r\nYou can now take part in the various services we have to offer you. Some of these services include:<br />\r\n<br />\r\nPermanent Cart - Any products added to your online cart remain there until you remove them, or check them out.<br />\r\nAddress Book - We can now deliver your products to another address other than yours! This is perfect to send birthday gifts direct to the birthday-person themselves.<br />\r\nOrder History - View your history of purchases that you have made with us.<br />\r\nProducts Reviews - Share your opinions on products with our other customers.<br />\r\n<br />\r\nFor help with any of our online services, please email the store-owner: <a href=\"mailto:{{Store.Email}}\">{{Store.Email}}</a>.<br />\r\n<br />\r\nNote: This email address was provided on our registration page. If you own the email and did not register on our site, please send an email to <a href=\"mailto:{{Store.Email}}\">{{Store.Email}}</a>.",
+                                           Body = "We welcome you to <a href=\"{{Store.URL}}\"> {{Store.Name}}</a>.<br />\r\n<br />\r\nYou can now take part in the various services we have to offer you. Some of these services include:<br />\r\n<br />\r\nPermanent Cart - Any notes added to your online cart remain there until you remove them, or check them out.<br />\r\nAddress Book - We can now deliver your notes to another address other than yours! This is perfect to send birthday gifts direct to the birthday-person themselves.<br />\r\nOrder History - View your history of purchases that you have made with us.<br />\r\nNotes Reviews - Share your opinions on notes with our other users.<br />\r\n<br />\r\nFor help with any of our online services, please email the store-owner: <a href=\"mailto:{{Store.Email}}\">{{Store.Email}}</a>.<br />\r\n<br />\r\nNote: This email address was provided on our registration page. If you own the email and did not register on our site, please send an email to <a href=\"mailto:{{Store.Email}}\">{{Store.Email}}</a>.",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
@@ -512,17 +425,17 @@ namespace ForeverNote.Services.Installation
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "NewCustomer.Notification",
-                                           Subject = "{{Store.Name}}. New customer registration",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nA new customer registered with your store. Below are the customer's details:<br />\r\nFull name: {{Customer.FullName}}<br />\r\nEmail: {{Customer.Email}}</p>",
+                                           Name = "NewUser.Notification",
+                                           Subject = "{{Store.Name}}. New user registration",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nA new user registered with your store. Below are the user's details:<br />\r\nFull name: {{User.FullName}}<br />\r\nEmail: {{User.Email}}</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "NewReturnRequest.CustomerNotification",
+                                           Name = "NewReturnRequest.UserNotification",
                                            Subject = "{{Store.Name}}. New return request.",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Customer.FullName}}!<br />\r\n You have just submitted a new return request. Details are below:<br />\r\nRequest ID: {{ReturnRequest.Id}}<br />\r\nProducts:<br />\r\n{{ReturnRequest.Products}}<br />\r\nCustomer comments: {{ReturnRequest.CustomerComment}}<br />\r\n<br />\r\nPickup date: {{ReturnRequest.PickupDate}}<br />\r\n<br />\r\nPickup address:<br />\r\n{{ReturnRequest.PickupAddressFirstName}} {{ReturnRequest.PickupAddressLastName}}<br />\r\n{{ReturnRequest.PickupAddressAddress1}}<br />\r\n{{ReturnRequest.PickupAddressCity}} {{ReturnRequest.PickupAddressZipPostalCode}}<br />\r\n{{ReturnRequest.PickupAddressStateProvince}} {{ReturnRequest.PickupAddressCountry}}<br />\r\n</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{User.FullName}}!<br />\r\n You have just submitted a new return request. Details are below:<br />\r\nRequest ID: {{ReturnRequest.Id}}<br />\r\nNotes:<br />\r\n{{ReturnRequest.Notes}}<br />\r\nUser comments: {{ReturnRequest.UserComment}}<br />\r\n<br />\r\nPickup date: {{ReturnRequest.PickupDate}}<br />\r\n<br />\r\nPickup address:<br />\r\n{{ReturnRequest.PickupAddressFirstName}} {{ReturnRequest.PickupAddressLastName}}<br />\r\n{{ReturnRequest.PickupAddressAddress1}}<br />\r\n{{ReturnRequest.PickupAddressCity}} {{ReturnRequest.PickupAddressZipPostalCode}}<br />\r\n{{ReturnRequest.PickupAddressStateProvince}} {{ReturnRequest.PickupAddressCountry}}<br />\r\n</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
@@ -530,7 +443,7 @@ namespace ForeverNote.Services.Installation
                                        {
                                            Name = "NewReturnRequest.StoreOwnerNotification",
                                            Subject = "{{Store.Name}}. New return request.",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{Customer.FullName}} has just submitted a new return request. Details are below:<br />\r\nRequest ID: {{ReturnRequest.Id}}<br />\r\nProducts:<br />\r\n{{ReturnRequest.Products}}<br />\r\nCustomer comments: {{ReturnRequest.CustomerComment}}<br />\r\n<br />\r\nPickup date: {{ReturnRequest.PickupDate}}<br />\r\n<br />\r\nPickup address:<br />\r\n{{ReturnRequest.PickupAddressFirstName}} {{ReturnRequest.PickupAddressLastName}}<br />\r\n{{ReturnRequest.PickupAddressAddress1}}<br />\r\n{{ReturnRequest.PickupAddressCity}} {{ReturnRequest.PickupAddressZipPostalCode}}<br />\r\n{{ReturnRequest.PickupAddressStateProvince}} {{ReturnRequest.PickupAddressCountry}}<br />\r\n</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{User.FullName}} has just submitted a new return request. Details are below:<br />\r\nRequest ID: {{ReturnRequest.Id}}<br />\r\nNotes:<br />\r\n{{ReturnRequest.Notes}}<br />\r\nUser comments: {{ReturnRequest.UserComment}}<br />\r\n<br />\r\nPickup date: {{ReturnRequest.PickupDate}}<br />\r\n<br />\r\nPickup address:<br />\r\n{{ReturnRequest.PickupAddressFirstName}} {{ReturnRequest.PickupAddressLastName}}<br />\r\n{{ReturnRequest.PickupAddressAddress1}}<br />\r\n{{ReturnRequest.PickupAddressCity}} {{ReturnRequest.PickupAddressZipPostalCode}}<br />\r\n{{ReturnRequest.PickupAddressStateProvince}} {{ReturnRequest.PickupAddressCountry}}<br />\r\n</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
@@ -562,23 +475,23 @@ namespace ForeverNote.Services.Installation
                                        {
                                            Name = "NewVATSubmitted.StoreOwnerNotification",
                                            Subject = "{{Store.Name}}. New VAT number is submitted.",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{Customer.FullName}} ({{Customer.Email}}) has just submitted a new VAT number. Details are below:<br />\r\nVAT number: {{Customer.VatNumber}}<br />\r\nVAT number status: {{Customer.VatNumberStatus}}<br />\r\nReceived name: {{VatValidationResult.Name}}<br />\r\nReceived address: {{VatValidationResult.Address}}</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{User.FullName}} ({{User.Email}}) has just submitted a new VAT number. Details are below:<br />\r\nVAT number: {{User.VatNumber}}<br />\r\nVAT number status: {{User.VatNumberStatus}}<br />\r\nReceived name: {{VatValidationResult.Name}}<br />\r\nReceived address: {{VatValidationResult.Address}}</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                   new MessageTemplate
                                        {
                                            Name = "OrderCancelled.StoreOwnerNotification",
-                                           Subject = "{{Store.Name}}. Customer cancelled an order",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n<br />\r\nCustomer cancelled an order. Below is the summary of the order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nOrder Details: <a target=\"_blank\" href=\"{{Order.OrderURLForCustomer}}\">{{Order.OrderURLForCustomer}}</a><br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}}<br />\r\n<br />\r\n" + OrderProducts + "</p>",
+                                           Subject = "{{Store.Name}}. User cancelled an order",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n<br />\r\nUser cancelled an order. Below is the summary of the order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nOrder Details: <a target=\"_blank\" href=\"{{Order.OrderURLForUser}}\">{{Order.OrderURLForUser}}</a><br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}}<br />\r\n<br />\r\n" + OrderNotes + "</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                     new MessageTemplate
                                        {
-                                           Name = "OrderCancelled.CustomerNotification",
+                                           Name = "OrderCancelled.UserNotification",
                                            Subject = "{{Store.Name}}. Your order cancelled",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Order.CustomerFullName}}, <br />\r\nYour order has been cancelled. Below is the summary of the order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nOrder Details: <a target=\"_blank\" href=\"{{Order.OrderURLForCustomer}}\">{{Order.OrderURLForCustomer}}</a><br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}}<br />\r\n<br />\r\n" + OrderProducts + "</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Order.UserFullName}}, <br />\r\nYour order has been cancelled. Below is the summary of the order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nOrder Details: <a target=\"_blank\" href=\"{{Order.OrderURLForUser}}\">{{Order.OrderURLForUser}}</a><br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}}<br />\r\n<br />\r\n" + OrderNotes + "</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
@@ -592,25 +505,25 @@ namespace ForeverNote.Services.Installation
                                        },
                                     new MessageTemplate
                                        {
-                                           Name = "OrderCompleted.CustomerNotification",
+                                           Name = "OrderCompleted.UserNotification",
                                            Subject = "{{Store.Name}}. Your order completed",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Order.CustomerFullName}}, <br />\r\nYour order has been completed. Below is the summary of the order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nOrder Details: <a target=\"_blank\" href=\"{{Order.OrderURLForCustomer}}\">{{Order.OrderURLForCustomer}}</a><br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}}<br />\r\n<br />\r\n" + OrderProducts + "</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Order.UserFullName}}, <br />\r\nYour order has been completed. Below is the summary of the order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nOrder Details: <a target=\"_blank\" href=\"{{Order.OrderURLForUser}}\">{{Order.OrderURLForUser}}</a><br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}}<br />\r\n<br />\r\n" + OrderNotes + "</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "ShipmentDelivered.CustomerNotification",
+                                           Name = "ShipmentDelivered.UserNotification",
                                            Subject = "Your order from {{Store.Name}} has been delivered.",
-                                           Body = "<p><a href=\"{{Store.URL}}\"> {{Store.Name}}</a> <br />\r\n <br />\r\n Hello {{Order.CustomerFullName}}, <br />\r\n Good news! You order has been delivered. <br />\r\n Order Number: {{Order.OrderNumber}}<br />\r\n Order Details: <a href=\"{{Order.OrderURLForCustomer}}\" target=\"_blank\">{{Order.OrderURLForCustomer}}</a><br />\r\n Date Ordered: {{Order.CreatedOn}}<br />\r\n <br />\r\n <br />\r\n <br />\r\n Billing Address<br />\r\n {{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n {{Order.BillingAddress1}}<br />\r\n {{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n {{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n <br />\r\n <br />\r\n <br />\r\n Shipping Address<br />\r\n {{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n {{Order.ShippingAddress1}}<br />\r\n {{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n {{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n <br />\r\n Shipping Method: {{Order.ShippingMethod}} <br />\r\n <br />\r\n Delivered Products: <br />\r\n <br />\r\n" + ShipmentProducts + "</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\"> {{Store.Name}}</a> <br />\r\n <br />\r\n Hello {{Order.UserFullName}}, <br />\r\n Good news! You order has been delivered. <br />\r\n Order Number: {{Order.OrderNumber}}<br />\r\n Order Details: <a href=\"{{Order.OrderURLForUser}}\" target=\"_blank\">{{Order.OrderURLForUser}}</a><br />\r\n Date Ordered: {{Order.CreatedOn}}<br />\r\n <br />\r\n <br />\r\n <br />\r\n Billing Address<br />\r\n {{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n {{Order.BillingAddress1}}<br />\r\n {{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n {{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n <br />\r\n <br />\r\n <br />\r\n Shipping Address<br />\r\n {{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n {{Order.ShippingAddress1}}<br />\r\n {{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n {{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n <br />\r\n Shipping Method: {{Order.ShippingMethod}} <br />\r\n <br />\r\n Delivered Notes: <br />\r\n <br />\r\n" + ShipmentNotes + "</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "OrderPlaced.CustomerNotification",
+                                           Name = "OrderPlaced.UserNotification",
                                            Subject = "Order receipt from {{Store.Name}}.",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Order.CustomerFullName}}, <br />\r\nThanks for buying from <a href=\"{{Store.URL}}\">{{Store.Name}}</a>. Below is the summary of the order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nOrder Details: <a target=\"_blank\" href=\"{{Order.OrderURLForCustomer}}\">{{Order.OrderURLForCustomer}}</a><br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}}<br />\r\n<br />\r\n" + OrderProducts + "</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Order.UserFullName}}, <br />\r\nThanks for buying from <a href=\"{{Store.URL}}\">{{Store.Name}}</a>. Below is the summary of the order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nOrder Details: <a target=\"_blank\" href=\"{{Order.OrderURLForUser}}\">{{Order.OrderURLForUser}}</a><br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}}<br />\r\n<br />\r\n" + OrderNotes + "</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
@@ -618,47 +531,47 @@ namespace ForeverNote.Services.Installation
                                        {
                                            Name = "OrderPlaced.StoreOwnerNotification",
                                            Subject = "{{Store.Name}}. Purchase Receipt for Order #{{Order.OrderNumber}}",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{Order.CustomerFullName}} ({{Order.CustomerEmail}}) has just placed an order from your store. Below is the summary of the order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}}<br />\r\n<br />\r\n" + OrderProducts + "</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{Order.UserFullName}} ({{Order.UserEmail}}) has just placed an order from your store. Below is the summary of the order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}}<br />\r\n<br />\r\n" + OrderNotes + "</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "ShipmentSent.CustomerNotification",
+                                           Name = "ShipmentSent.UserNotification",
                                            Subject = "Your order from {{Store.Name}} has been shipped.",
-                                           Body = "<p><a href=\"{{Store.URL}}\"> {{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Order.CustomerFullName}}!, <br />\r\nGood news! You order has been shipped. <br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nOrder Details: <a href=\"{{Order.OrderURLForCustomer}}\" target=\"_blank\">{{Order.OrderURLForCustomer}}</a><br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}} <br />\r\n <br />\r\n Shipped Products: <br />\r\n <br />\r\n" + ShipmentProducts + "</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\"> {{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Order.UserFullName}}!, <br />\r\nGood news! You order has been shipped. <br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nOrder Details: <a href=\"{{Order.OrderURLForUser}}\" target=\"_blank\">{{Order.OrderURLForUser}}</a><br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}} <br />\r\n <br />\r\n Shipped Notes: <br />\r\n <br />\r\n" + ShipmentNotes + "</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "Product.ProductReview",
-                                           Subject = "{{Store.Name}}. New product review.",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nA new product review has been written for product \"{{ProductReview.ProductName}}\".</p>",
+                                           Name = "Note.NoteReview",
+                                           Subject = "{{Store.Name}}. New note review.",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nA new note review has been written for note \"{{NoteReview.NoteName}}\".</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
                                            Name = "QuantityBelow.StoreOwnerNotification",
-                                           Subject = "{{Store.Name}}. Quantity below notification. {{Product.Name}}",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{Product.Name}} (ID: {{Product.Id}}) low quantity. <br />\r\n<br />\r\nQuantity: {{Product.StockQuantity}}<br />\r\n</p>",
+                                           Subject = "{{Store.Name}}. Quantity below notification. {{Note.Name}}",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{Note.Name}} (ID: {{Note.Id}}) low quantity. <br />\r\n<br />\r\nQuantity: {{Note.StockQuantity}}<br />\r\n</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
                                            Name = "QuantityBelow.AttributeCombination.StoreOwnerNotification",
-                                           Subject = "{{Store.Name}}. Quantity below notification. {{Product.Name}}",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{Product.Name}} (ID: {{Product.Id}}) low quantity. <br />\r\n{{AttributeCombination.Formatted}}<br />\r\nQuantity: {{AttributeCombination.StockQuantity}}<br />\r\n</p>",
+                                           Subject = "{{Store.Name}}. Quantity below notification. {{Note.Name}}",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{Note.Name}} (ID: {{Note.Id}}) low quantity. <br />\r\n{{AttributeCombination.Formatted}}<br />\r\nQuantity: {{AttributeCombination.StockQuantity}}<br />\r\n</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "ReturnRequestStatusChanged.CustomerNotification",
+                                           Name = "ReturnRequestStatusChanged.UserNotification",
                                            Subject = "{{Store.Name}}. Return request status was changed.",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Customer.FullName}},<br />\r\nYour return request #{{ReturnRequest.Id}} status has been changed.</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{User.FullName}},<br />\r\nYour return request #{{ReturnRequest.Id}} status has been changed.</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
@@ -666,15 +579,15 @@ namespace ForeverNote.Services.Installation
                                        {
                                            Name = "Service.EmailAFriend",
                                            Subject = "{{Store.Name}}. Referred Item",
-                                           Body = "<p><a href=\"{{Store.URL}}\"> {{Store.Name}}</a> <br />\r\n<br />\r\n{{EmailAFriend.Email}} was shopping on {{Store.Name}} and wanted to share the following item with you. <br />\r\n<br />\r\n<b><a target=\"_blank\" href=\"{{Product.ProductURLForCustomer}}\">{{Product.Name}}</a></b> <br />\r\n{{Product.ShortDescription}} <br />\r\n<br />\r\nFor more info click <a target=\"_blank\" href=\"{{Product.ProductURLForCustomer}}\">here</a> <br />\r\n<br />\r\n<br />\r\n{{EmailAFriend.PersonalMessage}}<br />\r\n<br />\r\n{{Store.Name}}</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\"> {{Store.Name}}</a> <br />\r\n<br />\r\n{{EmailAFriend.Email}} was shopping on {{Store.Name}} and wanted to share the following item with you. <br />\r\n<br />\r\n<b><a target=\"_blank\" href=\"{{Note.NoteURLForUser}}\">{{Note.Name}}</a></b> <br />\r\n{{Note.ShortDescription}} <br />\r\n<br />\r\nFor more info click <a target=\"_blank\" href=\"{{Note.NoteURLForUser}}\">here</a> <br />\r\n<br />\r\n<br />\r\n{{EmailAFriend.PersonalMessage}}<br />\r\n<br />\r\n{{Store.Name}}</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
                                            Name = "Service.AskQuestion",
-                                           Subject = "{{Store.Name}}. Question about a product",
-                                           Body = "<p><a href=\"{{Store.URL}}\"> {{Store.Name}}</a> <br />\r\n<br />\r\n{{AskQuestion.Email}} wanted to ask question about a product {{Product.Name}}. <br />\r\n<br />\r\n<b><a target=\"_blank\" href=\"{{Product.ProductURLForCustomer}}\">{{Product.Name}}</a></b> <br />\r\n{{Product.ShortDescription}} <br />\r\n{{AskQuestion.Message}}<br />\r\n {{AskQuestion.Email}} <br />\r\n {{AskQuestion.FullName}} <br />\r\n {{AskQuestion.Phone}} <br />\r\n{{Store.Name}}</p>",
+                                           Subject = "{{Store.Name}}. Question about a note",
+                                           Body = "<p><a href=\"{{Store.URL}}\"> {{Store.Name}}</a> <br />\r\n<br />\r\n{{AskQuestion.Email}} wanted to ask question about a note {{Note.Name}}. <br />\r\n<br />\r\n<b><a target=\"_blank\" href=\"{{Note.NoteURLForUser}}\">{{Note.Name}}</a></b> <br />\r\n{{Note.ShortDescription}} <br />\r\n{{AskQuestion.Message}}<br />\r\n {{AskQuestion.Email}} <br />\r\n {{AskQuestion.FullName}} <br />\r\n {{AskQuestion.Phone}} <br />\r\n{{Store.Name}}</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
@@ -699,31 +612,31 @@ namespace ForeverNote.Services.Installation
                                        {
                                            Name = "Wishlist.EmailAFriend",
                                            Subject = "{{Store.Name}}. Wishlist",
-                                           Body = "<p><a href=\"{{Store.URL}}\"> {{Store.Name}}</a> <br />\r\n<br />\r\n{{ShoppingCart.WishlistEmail}} was shopping on {{Store.Name}} and wanted to share a wishlist with you. <br />\r\n<br />\r\n<br />\r\nFor more info click <a target=\"_blank\" href=\"{{ShoppingCart.WishlistURLForCustomer}}\">here</a> <br />\r\n<br />\r\n<br />\r\n{{ShoppingCart.WishlistPersonalMessage}}<br />\r\n<br />\r\n{{Store.Name}}</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\"> {{Store.Name}}</a> <br />\r\n<br />\r\n{{ShoppingCart.WishlistEmail}} was shopping on {{Store.Name}} and wanted to share a wishlist with you. <br />\r\n<br />\r\n<br />\r\nFor more info click <a target=\"_blank\" href=\"{{ShoppingCart.WishlistURLForUser}}\">here</a> <br />\r\n<br />\r\n<br />\r\n{{ShoppingCart.WishlistPersonalMessage}}<br />\r\n<br />\r\n{{Store.Name}}</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "Customer.NewOrderNote",
+                                           Name = "User.NewOrderNote",
                                            Subject = "{{Store.Name}}. New order note has been added",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Customer.FullName}}, <br />\r\nNew order note has been added to your account:<br />\r\n\"{{Order.NewNoteText}}\".<br />\r\n<a target=\"_blank\" href=\"{{Order.OrderURLForCustomer}}\">{{Order.OrderURLForCustomer}}</a></p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{User.FullName}}, <br />\r\nNew order note has been added to your account:<br />\r\n\"{{Order.NewNoteText}}\".<br />\r\n<a target=\"_blank\" href=\"{{Order.OrderURLForUser}}\">{{Order.OrderURLForUser}}</a></p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "Customer.NewCustomerNote",
-                                           Subject = "New customer note has been added",
-                                           Body = "<p><br />\r\nHello {{Customer.FullName}}, <br />\r\nNew customer note has been added to your account:<br />\r\n\"{{Customer.NewTitleText}}\".<br />\r\n</p>",
+                                           Name = "User.NewUserNote",
+                                           Subject = "New user note has been added",
+                                           Body = "<p><br />\r\nHello {{User.FullName}}, <br />\r\nNew user note has been added to your account:<br />\r\n\"{{User.NewTitleText}}\".<br />\r\n</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                      new MessageTemplate
                                        {
-                                           Name = "Customer.NewReturnRequestNote",
+                                           Name = "User.NewReturnRequestNote",
                                            Subject = "{{Store.Name}}. New return request note has been added",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Customer.FullName}},<br />\r\nYour return request #{{ReturnRequest.ReturnNumber}} has a new note.</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{User.FullName}},<br />\r\nYour return request #{{ReturnRequest.ReturnNumber}} has a new note.</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
@@ -731,7 +644,7 @@ namespace ForeverNote.Services.Installation
                                        {
                                            Name = "RecurringPaymentCancelled.StoreOwnerNotification",
                                            Subject = "{{Store.Name}}. Recurring payment cancelled",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{Customer.FullName}} ({{Customer.Email}}) has just cancelled a recurring payment ID={{RecurringPayment.ID}}.</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{User.FullName}} ({{User.Email}}) has just cancelled a recurring payment ID={{RecurringPayment.ID}}.</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
@@ -739,7 +652,7 @@ namespace ForeverNote.Services.Installation
                                        {
                                            Name = "OrderPlaced.VendorNotification",
                                            Subject = "{{Store.Name}}. Order placed",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{Customer.FullName}} ({{Customer.Email}}) has just placed an order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n" + OrderVendorProducts + "</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{User.FullName}} ({{User.Email}}) has just placed an order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n" + OrderVendorNotes + "</p>",
                                            //this template is disabled by default
                                            IsActive = false,
                                            EmailAccountId = eaGeneral.Id,
@@ -755,9 +668,9 @@ namespace ForeverNote.Services.Installation
                                        },
                                    new MessageTemplate
                                        {
-                                           Name = "OrderPaid.CustomerNotification",
+                                           Name = "OrderPaid.UserNotification",
                                            Subject = "{{Store.Name}}. Order #{{Order.OrderNumber}} paid",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Order.CustomerFullName}}, <br />\r\nThanks for buying from <a href=\"{{Store.URL}}\">{{Store.Name}}</a>. Order #{{Order.OrderNumber}} has been just paid. Below is the summary of the order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nOrder Details: <a href=\"{{Order.OrderURLForCustomer}}\" target=\"_blank\">{{Order.OrderURLForCustomer}}</a><br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}}<br />\r\n<br />\r\n" + OrderProducts + "</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Order.UserFullName}}, <br />\r\nThanks for buying from <a href=\"{{Store.URL}}\">{{Store.Name}}</a>. Order #{{Order.OrderNumber}} has been just paid. Below is the summary of the order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nOrder Details: <a href=\"{{Order.OrderURLForUser}}\" target=\"_blank\">{{Order.OrderURLForUser}}</a><br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}}<br />\r\n<br />\r\n" + OrderNotes + "</p>",
                                            //this template is disabled by default
                                            IsActive = false,
                                            EmailAccountId = eaGeneral.Id,
@@ -766,16 +679,16 @@ namespace ForeverNote.Services.Installation
                                        {
                                            Name = "OrderPaid.VendorNotification",
                                            Subject = "{{Store.Name}}. Order #{{Order.OrderNumber}} paid",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nOrder #{{Order.OrderNumber}} has been just paid. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n" + OrderVendorProducts + "</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nOrder #{{Order.OrderNumber}} has been just paid. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n" + OrderVendorNotes + "</p>",
                                            //this template is disabled by default
                                            IsActive = false,
                                            EmailAccountId = eaGeneral.Id,
                                        },
                                    new MessageTemplate
                                         {
-                                           Name = "OrderRefunded.CustomerNotification",
+                                           Name = "OrderRefunded.UserNotification",
                                            Subject = "{{Store.Name}}. Order #{{Order.OrderNumber}} refunded",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Order.CustomerFullName}}, <br />\r\nThanks for buying from <a href=\"{{Store.URL}}\">{{Store.Name}}</a>. Order #{{Order.OrderNumber}} has been has been refunded. Please allow 7-14 days for the refund to be reflected in your account.<br />\r\n<br />\r\nAmount refunded: {{Order.AmountRefunded}}<br />\r\n<br />\r\nBelow is the summary of the order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nOrder Details: <a href=\"{{Order.OrderURLForCustomer}}\" target=\"_blank\">{{Order.OrderURLForCustomer}}</a><br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}}<br />\r\n<br />\r\n" + OrderProducts + "</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\nHello {{Order.UserFullName}}, <br />\r\nThanks for buying from <a href=\"{{Store.URL}}\">{{Store.Name}}</a>. Order #{{Order.OrderNumber}} has been has been refunded. Please allow 7-14 days for the refund to be reflected in your account.<br />\r\n<br />\r\nAmount refunded: {{Order.AmountRefunded}}<br />\r\n<br />\r\nBelow is the summary of the order. <br />\r\n<br />\r\nOrder Number: {{Order.OrderNumber}}<br />\r\nOrder Details: <a href=\"{{Order.OrderURLForUser}}\" target=\"_blank\">{{Order.OrderURLForUser}}</a><br />\r\nDate Ordered: {{Order.CreatedOn}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nBilling Address<br />\r\n{{Order.BillingFirstName}} {{Order.BillingLastName}}<br />\r\n{{Order.BillingAddress1}}<br />\r\n{{Order.BillingCity}} {{Order.BillingZipPostalCode}}<br />\r\n{{Order.BillingStateProvince}} {{Order.BillingCountry}}<br />\r\n<br />\r\n<br />\r\n<br />\r\nShipping Address<br />\r\n{{Order.ShippingFirstName}} {{Order.ShippingLastName}}<br />\r\n{{Order.ShippingAddress1}}<br />\r\n{{Order.ShippingCity}} {{Order.ShippingZipPostalCode}}<br />\r\n{{Order.ShippingStateProvince}} {{Order.ShippingCountry}}<br />\r\n<br />\r\nShipping Method: {{Order.ShippingMethod}}<br />\r\n<br />\r\n" + OrderNotes + "</p>",
                                            //this template is disabled by default
                                            IsActive = false,
                                            EmailAccountId = eaGeneral.Id,
@@ -793,7 +706,7 @@ namespace ForeverNote.Services.Installation
                                        {
                                            Name = "VendorAccountApply.StoreOwnerNotification",
                                            Subject = "{{Store.Name}}. New vendor account submitted.",
-                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{Customer.FullName}} ({{Customer.Email}}) has just submitted for a vendor account. Details are below:<br />\r\nVendor name: {{Vendor.Name}}<br />\r\nVendor email: {{Vendor.Email}}<br />\r\n<br />\r\nYou can activate it in admin area.</p>",
+                                           Body = "<p><a href=\"{{Store.URL}}\">{{Store.Name}}</a> <br />\r\n<br />\r\n{{User.FullName}} ({{User.Email}}) has just submitted for a vendor account. Details are below:<br />\r\nVendor name: {{Vendor.Name}}<br />\r\nVendor email: {{Vendor.Email}}<br />\r\n<br />\r\nYou can activate it in admin area.</p>",
                                            IsActive = true,
                                            EmailAccountId = eaGeneral.Id,
                                        },
@@ -817,36 +730,17 @@ namespace ForeverNote.Services.Installation
             await _messageTemplateRepository.InsertAsync(messageTemplates);
         }
 
-        protected virtual async Task InstallSettings(bool installSampleData)
+        protected virtual async Task InstallSettings()
         {
             var _settingService = _serviceProvider.GetRequiredService<ISettingService>();
 
             await _settingService.SaveSetting(new MenuItemSettings {
-                DisplayHomePageMenu = !installSampleData,
-                DisplayNewProductsMenu = !installSampleData,
-                DisplaySearchMenu = !installSampleData,
-                DisplayCustomerMenu = !installSampleData,
-                DisplayBlogMenu = !installSampleData,
-                DisplayForumsMenu = !installSampleData,
-                DisplayContactUsMenu = !installSampleData
-            });
-
-            await _settingService.SaveSetting(new PdfSettings {
-                LogoPictureId = "",
-                LetterPageSizeEnabled = false,
-                RenderOrderNotes = true,
-                FontFileName = "FreeSerif.ttf",
-                InvoiceFooterTextColumn1 = null,
-                InvoiceFooterTextColumn2 = null,
             });
 
             await _settingService.SaveSetting(new CommonSettings {
                 StoreInDatabaseContactUsForm = true,
                 UseSystemEmailForContactUsForm = true,
                 UseStoredProceduresIfSupported = true,
-                SitemapEnabled = true,
-                SitemapIncludeCategories = true,
-                SitemapIncludeProducts = false,
                 DisplayJavaScriptDisabledWarning = false,
                 UseFullTextSearch = false,
                 FullTextMode = FulltextSearchMode.ExactMatch,
@@ -869,19 +763,11 @@ namespace ForeverNote.Services.Installation
             });
             await _settingService.SaveSetting(new MediaSettings {
                 AvatarPictureSize = 120,
-                BlogThumbPictureSize = 450,
-                ProductThumbPictureSize = 415,
-                ProductDetailsPictureSize = 550,
-                ProductThumbPictureSizeOnProductDetailsPage = 100,
-                AssociatedProductPictureSize = 220,
-                CategoryThumbPictureSize = 450,
-                ManufacturerThumbPictureSize = 420,
-                VendorThumbPictureSize = 450,
-                CourseThumbPictureSize = 200,
-                LessonThumbPictureSize = 64,
-                CartThumbPictureSize = 80,
-                MiniCartThumbPictureSize = 100,
-                AddToCartThumbPictureSize = 200,
+                NoteThumbPictureSize = 415,
+                NoteDetailsPictureSize = 550,
+                NoteThumbPictureSizeOnNoteDetailsPage = 100,
+                AssociatedNotePictureSize = 220,
+                NotebookThumbPictureSize = 450,
                 AutoCompleteSearchThumbPictureSize = 50,
                 ImageSquarePictureSize = 32,
                 MaximumImageSize = 1980,
@@ -901,72 +787,34 @@ namespace ForeverNote.Services.Installation
             });
 
             await _settingService.SaveSetting(new CatalogSettings {
-                AllowViewUnpublishedProductPage = true,
-                DisplayDiscontinuedMessageForUnpublishedProducts = true,
-                PublishBackProductWhenCancellingOrders = false,
-                ShowSkuOnProductDetailsPage = false,
-                ShowSkuOnCatalogPages = false,
-                ShowManufacturerPartNumber = false,
-                ShowGtin = false,
-                ShowFreeShippingNotification = true,
-                AllowProductSorting = true,
-                AllowProductViewModeChanging = true,
+                AllowNoteSorting = true,
                 DefaultViewMode = "grid",
-                ShowProductsFromSubcategories = true,
-                ShowCategoryProductNumber = false,
-                ShowCategoryProductNumberIncludingSubcategories = false,
-                CategoryBreadcrumbEnabled = true,
+                ShowNotesFromSubnotebooks = true,
+                ShowNotebookNoteCount = false,
+                ShowNotebookNoteNumberIncludingSubnotebooks = false,
+                NotebookBreadcrumbEnabled = true,
                 ShowShareButton = false,
-                PageShareCode = "<!-- AddThis Button BEGIN --><div class=\"addthis_inline_share_toolbox\"></div><script type=\"text/javascript\" src=\"//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5bbf4b026e74abf6\"></script><!-- AddThis Button END -->",
-                ProductReviewsMustBeApproved = false,
-                DefaultProductRatingValue = 5,
-                AllowAnonymousUsersToReviewProduct = false,
-                ProductReviewPossibleOnlyAfterPurchasing = false,
-                NotifyStoreOwnerAboutNewProductReviews = false,
-                EmailAFriendEnabled = true,
-                AskQuestionEnabled = false,
-                AskQuestionOnProduct = true,
-                AllowAnonymousUsersToEmailAFriend = false,
-                RecentlyViewedProductsNumber = 3,
-                RecentlyViewedProductsEnabled = true,
-                RecommendedProductsEnabled = false,
-                SuggestedProductsEnabled = false,
-                SuggestedProductsNumber = 6,
-                PersonalizedProductsEnabled = false,
-                PersonalizedProductsNumber = 6,
-                NewProductsNumber = 6,
-                NewProductsEnabled = true,
-                NewProductsOnHomePage = false,
-                NewProductsNumberOnHomePage = 6,
-                CompareProductsEnabled = true,
-                CompareProductsNumber = 4,
-                ProductSearchAutoCompleteEnabled = true,
-                ProductSearchAutoCompleteNumberOfProducts = 10,
-                ProductSearchTermMinimumLength = 3,
-                ShowProductImagesInSearchAutoComplete = true,
-                ShowBestsellersOnHomepage = false,
-                NumberOfBestsellersOnHomepage = 4,
-                PeriodBestsellers = 6,
-                SearchPageProductsPerPage = 6,
-                SearchPageAllowCustomersToSelectPageSize = true,
+                RecentlyViewedNotesNumber = 3,
+                RecentlyViewedNotesEnabled = true,
+                NewNotesNumber = 6,
+                NewNotesEnabled = true,
+                NewNotesOnHomePage = false,
+                NewNotesNumberOnHomePage = 6,
+                NoteSearchAutoCompleteEnabled = true,
+                NoteSearchAutoCompleteNumberOfNotes = 10,
+                NoteSearchTermMinimumLength = 3,
+                ShowNoteImagesInSearchAutoComplete = true,
+                SearchPageNotesPerPage = 6,
+                SearchPageAllowUsersToSelectPageSize = true,
                 SearchPagePageSizeOptions = "6, 3, 9, 18",
-                ProductsAlsoPurchasedEnabled = true,
-                ProductsAlsoPurchasedNumber = 3,
-                AjaxProcessAttributeChange = true,
-                NumberOfProductTags = 15,
-                ProductsByTagPageSize = 6,
-                IncludeShortDescriptionInCompareProducts = false,
-                IncludeFullDescriptionInCompareProducts = false,
-                IncludeFeaturedProductsInNormalLists = false,
-                DisplayTierPricesWithDiscounts = true,
-                IgnoreDiscounts = false,
-                IgnoreFeaturedProducts = false,
-                IgnoreAcl = true,
-                CustomerProductPrice = false,
-                ProductsByTagAllowCustomersToSelectPageSize = true,
-                ProductsByTagPageSizeOptions = "6, 3, 9, 18",
-                DefaultCategoryPageSizeOptions = "6, 3, 9",
-                LimitOfFeaturedProducts = 30,
+                NumberOfNoteTags = 15,
+                NotesByTagPageSize = 6,
+                IncludeFeaturedNotesInNormalLists = false,
+                IgnoreFeaturedNotes = false,
+                NotesByTagAllowUsersToSelectPageSize = true,
+                NotesByTagPageSizeOptions = "6, 3, 9, 18",
+                DefaultNotebookPageSizeOptions = "6, 3, 9",
+                LimitOfFeaturedNotes = 30,
             });
 
             await _settingService.SaveSetting(new LocalizationSettings {
@@ -979,7 +827,7 @@ namespace ForeverNote.Services.Installation
                 IgnoreRtlPropertyForAdminArea = false,
             });
 
-            await _settingService.SaveSetting(new CustomerSettings {
+            await _settingService.SaveSetting(new UserSettings {
                 UsernamesEnabled = false,
                 CheckUsernameAvailabilityEnabled = false,
                 AllowUsersToChangeUsernames = false,
@@ -991,57 +839,17 @@ namespace ForeverNote.Services.Installation
                 FailedPasswordAllowedAttempts = 0,
                 FailedPasswordLockoutMinutes = 30,
                 UserRegistrationType = UserRegistrationType.Standard,
-                AllowCustomersToUploadAvatars = false,
+                AllowUsersToUploadAvatars = false,
                 AvatarMaximumSizeBytes = 20000,
                 DefaultAvatarEnabled = true,
-                ShowCustomersLocation = false,
-                ShowCustomersJoinDate = false,
-                AllowViewingProfiles = false,
-                NotifyNewCustomerRegistration = false,
-                HideDownloadableProductsTab = false,
-                HideBackInStockSubscriptionsTab = false,
-                HideAuctionsTab = true,
-                HideNotesTab = true,
-                HideDocumentsTab = true,
-                DownloadableProductsValidateUser = true,
-                CustomerNameFormat = CustomerNameFormat.ShowFirstName,
-                GenderEnabled = false,
-                DateOfBirthEnabled = false,
-                DateOfBirthRequired = false,
-                DateOfBirthMinimumAge = 0,
-                CompanyEnabled = false,
-                StreetAddressEnabled = false,
-                StreetAddress2Enabled = false,
-                ZipPostalCodeEnabled = false,
-                CityEnabled = false,
-                CountryEnabled = false,
-                CountryRequired = false,
-                StateProvinceEnabled = false,
-                StateProvinceRequired = false,
-                PhoneEnabled = false,
-                FaxEnabled = false,
-                AcceptPrivacyPolicyEnabled = false,
-                NewsletterEnabled = true,
-                NewsletterTickedByDefault = true,
-                HideNewsletterBlock = false,
-                RegistrationFreeShipping = false,
-                NewsletterBlockAllowToUnsubscribe = false,
-                OnlineCustomerMinutes = 20,
-                OnlineShoppingCartMinutes = 60,
-                StoreLastVisitedPage = false,
-                SaveVisitedPage = false,
-                SuffixDeletedCustomers = true,
-                AllowUsersToDeleteAccount = false,
-                AllowUsersToExportData = false,
-                HideReviewsTab = false,
-                HideCoursesTab = true,
+                UserNameFormat = UserNameFormat.ShowFirstName,
                 TwoFactorAuthenticationEnabled = false,
             });
 
             await _settingService.SaveSetting(new StoreInformationSettings {
                 StoreClosed = false,
                 DefaultStoreTheme = "DefaultClean",
-                AllowCustomerToSelectTheme = false,
+                AllowUserToSelectTheme = false,
                 DisplayEuCookieLawWarning = false,
                 FacebookLink = "https://www.facebook.com/forevernotecom",
                 TwitterLink = "https://twitter.com/forevernote",
@@ -1067,7 +875,7 @@ namespace ForeverNote.Services.Installation
 
             await _settingService.SaveSetting(new DateTimeSettings {
                 DefaultStoreTimeZoneId = "",
-                AllowCustomersToSetTimeZone = false
+                AllowUsersToSetTimeZone = false
             });
 
             await _settingService.SaveSetting(new PushNotificationsSettings {
@@ -1076,24 +884,12 @@ namespace ForeverNote.Services.Installation
             });
 
             await _settingService.SaveSetting(new AdminSearchSettings {
-                BlogsDisplayOrder = 0,
-                CategoriesDisplayOrder = 0,
-                CustomersDisplayOrder = 0,
-                ManufacturersDisplayOrder = 0,
+                NotebooksDisplayOrder = 0,
                 MaxSearchResultsCount = 10,
                 MinSearchTermLength = 3,
-                NewsDisplayOrder = 0,
-                OrdersDisplayOrder = 0,
-                ProductsDisplayOrder = 0,
-                SearchInBlogs = true,
-                SearchInCategories = true,
-                SearchInCustomers = true,
-                SearchInManufacturers = true,
-                SearchInNews = true,
-                SearchInOrders = true,
-                SearchInProducts = true,
-                SearchInTopics = true,
-                TopicsDisplayOrder = 0,
+                NotesDisplayOrder = 0,
+                SearchInNotebooks = true,
+                SearchInNotes = true,
                 SearchInMenu = true,
                 MenuDisplayOrder = -1
             });
@@ -1106,39 +902,29 @@ namespace ForeverNote.Services.Installation
             });
         }
 
-        protected virtual async Task InstallCategories()
+        protected virtual async Task InstallNotebooks()
         {
             var pictureService = _serviceProvider.GetRequiredService<IPictureService>();
 
             //sample pictures
             var sampleImagesPath = GetSamplesPath();
 
-            var categoryTemplateInGridAndLines = _categoryTemplateRepository
-                .Table.FirstOrDefault(pt => pt.Name == "Products in Grid or Lines");
-            if (categoryTemplateInGridAndLines == null)
-                throw new Exception("Category template cannot be loaded");
-
-
-            //categories
-            var allCategories = new List<Category>();
-            var categoryComputers = new Category {
+            //notebooks
+            var allNotebooks = new List<Notebook>();
+            var notebookComputers = new Notebook {
                 Name = "Computers",
-                CategoryTemplateId = categoryTemplateInGridAndLines.Id,
                 PageSize = 6,
-                AllowCustomersToSelectPageSize = true,
-                PageSizeOptions = "6, 3, 9",
-                ParentCategoryId = "",
-                PictureId = (await pictureService.InsertPicture(File.ReadAllBytes(sampleImagesPath + "category_computers.jpeg"), "image/jpeg", "Computers")).Id,
-                IncludeInTopMenu = true,
+                ParentNotebookId = "",
+                PictureId = (await pictureService.InsertPicture(File.ReadAllBytes(sampleImagesPath + "notebook_computers.jpeg"), "image/jpeg", "Computers")).Id,
                 Flag = "New",
                 FlagStyle = "badge-danger",
                 DisplayOrder = 1,
                 CreatedOnUtc = DateTime.UtcNow,
                 UpdatedOnUtc = DateTime.UtcNow
             };
-            allCategories.Add(categoryComputers);
+            allNotebooks.Add(notebookComputers);
 
-            await _categoryRepository.InsertAsync(allCategories);
+            await _notebookRepository.InsertAsync(allNotebooks);
         }
 
         protected virtual async Task InstallActivityLogTypes()
@@ -1148,9 +934,9 @@ namespace ForeverNote.Services.Installation
                                           //admin area activities
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "AddNewCategory",
+                                                  SystemKeyword = "AddNewNotebook",
                                                   Enabled = true,
-                                                  Name = "Add a new category"
+                                                  Name = "Add a new notebook"
                                               },
                                           new ActivityLogType
                                               {
@@ -1166,15 +952,15 @@ namespace ForeverNote.Services.Installation
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "AddNewCustomer",
+                                                  SystemKeyword = "AddNewUser",
                                                   Enabled = true,
-                                                  Name = "Add a new customer"
+                                                  Name = "Add a new user"
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "AddNewCustomerRole",
+                                                  SystemKeyword = "AddNewUserRole",
                                                   Enabled = true,
-                                                  Name = "Add a new customer role"
+                                                  Name = "Add a new user role"
                                               },
                                           new ActivityLogType
                                               {
@@ -1208,15 +994,15 @@ namespace ForeverNote.Services.Installation
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "AddNewProduct",
+                                                  SystemKeyword = "AddNewNote",
                                                   Enabled = true,
-                                                  Name = "Add a new product"
+                                                  Name = "Add a new note"
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "AddNewProductAttribute",
+                                                  SystemKeyword = "AddNewNoteAttribute",
                                                   Enabled = true,
-                                                  Name = "Add a new product attribute"
+                                                  Name = "Add a new note attribute"
                                               },
                                           new ActivityLogType
                                               {
@@ -1250,9 +1036,9 @@ namespace ForeverNote.Services.Installation
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "DeleteCategory",
+                                                  SystemKeyword = "DeleteNotebook",
                                                   Enabled = true,
-                                                  Name = "Delete category"
+                                                  Name = "Delete notebook"
                                               },
                                           new ActivityLogType
                                               {
@@ -1268,15 +1054,15 @@ namespace ForeverNote.Services.Installation
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "DeleteCustomer",
+                                                  SystemKeyword = "DeleteUser",
                                                   Enabled = true,
-                                                  Name = "Delete a customer"
+                                                  Name = "Delete a user"
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "DeleteCustomerRole",
+                                                  SystemKeyword = "DeleteUserRole",
                                                   Enabled = true,
-                                                  Name = "Delete a customer role"
+                                                  Name = "Delete a user role"
                                               },
                                           new ActivityLogType
                                               {
@@ -1317,15 +1103,15 @@ namespace ForeverNote.Services.Installation
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "DeleteProduct",
+                                                  SystemKeyword = "DeleteNote",
                                                   Enabled = true,
-                                                  Name = "Delete a product"
+                                                  Name = "Delete a note"
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "DeleteProductAttribute",
+                                                  SystemKeyword = "DeleteNoteAttribute",
                                                   Enabled = true,
-                                                  Name = "Delete a product attribute"
+                                                  Name = "Delete a note attribute"
                                               },
                                           new ActivityLogType
                                               {
@@ -1359,9 +1145,9 @@ namespace ForeverNote.Services.Installation
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "EditCategory",
+                                                  SystemKeyword = "EditNotebook",
                                                   Enabled = true,
-                                                  Name = "Edit category"
+                                                  Name = "Edit notebook"
                                               },
                                           new ActivityLogType
                                               {
@@ -1377,15 +1163,15 @@ namespace ForeverNote.Services.Installation
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "EditCustomer",
+                                                  SystemKeyword = "EditUser",
                                                   Enabled = true,
-                                                  Name = "Edit a customer"
+                                                  Name = "Edit a user"
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "EditCustomerRole",
+                                                  SystemKeyword = "EditUserRole",
                                                   Enabled = true,
-                                                  Name = "Edit a customer role"
+                                                  Name = "Edit a user role"
                                               },
                                           new ActivityLogType
                                               {
@@ -1425,15 +1211,15 @@ namespace ForeverNote.Services.Installation
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "EditProduct",
+                                                  SystemKeyword = "EditNote",
                                                   Enabled = true,
-                                                  Name = "Edit a product"
+                                                  Name = "Edit a note"
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "EditProductAttribute",
+                                                  SystemKeyword = "EditNoteAttribute",
                                                   Enabled = true,
-                                                  Name = "Edit a product attribute"
+                                                  Name = "Edit a note attribute"
                                               },
                                           new ActivityLogType
                                               {
@@ -1498,9 +1284,9 @@ namespace ForeverNote.Services.Installation
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "PublicStore.ViewCategory",
+                                                  SystemKeyword = "PublicStore.ViewNotebook",
                                                   Enabled = false,
-                                                  Name = "Public store. View a category"
+                                                  Name = "Public store. View a notebook"
                                               },
                                           new ActivityLogType
                                               {
@@ -1510,9 +1296,9 @@ namespace ForeverNote.Services.Installation
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "PublicStore.ViewProduct",
+                                                  SystemKeyword = "PublicStore.ViewNote",
                                                   Enabled = false,
-                                                  Name = "Public store. View a product"
+                                                  Name = "Public store. View a note"
                                               },
                                           new ActivityLogType
                                               {
@@ -1530,7 +1316,7 @@ namespace ForeverNote.Services.Installation
                                               {
                                                   SystemKeyword = "PublicStore.AskQuestion",
                                                   Enabled = false,
-                                                  Name = "Public store. Ask a question about product"
+                                                  Name = "Public store. Ask a question about note"
                                               },
                                           new ActivityLogType
                                               {
@@ -1594,9 +1380,9 @@ namespace ForeverNote.Services.Installation
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "PublicStore.AddProductReview",
+                                                  SystemKeyword = "PublicStore.AddNoteReview",
                                                   Enabled = false,
-                                                  Name = "Public store. Add product review"
+                                                  Name = "Public store. Add note review"
                                               },
                                           new ActivityLogType
                                               {
@@ -1660,69 +1446,69 @@ namespace ForeverNote.Services.Installation
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "CustomerReminder.AbandonedCart",
+                                                  SystemKeyword = "UserReminder.AbandonedCart",
                                                   Enabled = true,
-                                                  Name = "Send email Customer reminder - AbandonedCart"
+                                                  Name = "Send email User reminder - AbandonedCart"
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "CustomerReminder.RegisteredCustomer",
+                                                  SystemKeyword = "UserReminder.RegisteredUser",
                                                   Enabled = true,
-                                                  Name = "Send email Customer reminder - RegisteredCustomer"
+                                                  Name = "Send email User reminder - RegisteredUser"
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "CustomerReminder.LastActivity",
+                                                  SystemKeyword = "UserReminder.LastActivity",
                                                   Enabled = true,
-                                                  Name = "Send email Customer reminder - LastActivity"
+                                                  Name = "Send email User reminder - LastActivity"
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "CustomerReminder.LastPurchase",
+                                                  SystemKeyword = "UserReminder.LastPurchase",
                                                   Enabled = true,
-                                                  Name = "Send email Customer reminder - LastPurchase"
+                                                  Name = "Send email User reminder - LastPurchase"
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "CustomerReminder.Birthday",
+                                                  SystemKeyword = "UserReminder.Birthday",
                                                   Enabled = true,
-                                                  Name = "Send email Customer reminder - Birthday"
+                                                  Name = "Send email User reminder - Birthday"
                                               },
                                           new ActivityLogType
                                               {
-                                                  SystemKeyword = "CustomerReminder.SendCampaign",
+                                                  SystemKeyword = "UserReminder.SendCampaign",
                                                   Enabled = true,
                                                   Name = "Send Campaign"
                                               },
                                            new ActivityLogType
                                               {
-                                                  SystemKeyword = "CustomerAdmin.SendEmail",
+                                                  SystemKeyword = "UserAdmin.SendEmail",
                                                   Enabled = true,
                                                   Name = "Send email"
                                               },
                                             new ActivityLogType
                                               {
-                                                  SystemKeyword = "CustomerAdmin.SendPM",
+                                                  SystemKeyword = "UserAdmin.SendPM",
                                                   Enabled = true,
                                                   Name = "Send PM"
                                               },
                                             new ActivityLogType
                                               {
-                                                  SystemKeyword = "UpdateKnowledgebaseCategory",
+                                                  SystemKeyword = "UpdateKnowledgebaseNotebook",
                                                   Enabled = true,
-                                                  Name = "Update knowledgebase category"
+                                                  Name = "Update knowledgebase notebook"
                                               },
                                             new ActivityLogType
                                               {
-                                                  SystemKeyword = "CreateKnowledgebaseCategory",
+                                                  SystemKeyword = "CreateKnowledgebaseNotebook",
                                                   Enabled = true,
-                                                  Name = "Create knowledgebase category"
+                                                  Name = "Create knowledgebase notebook"
                                               },
                                             new ActivityLogType
                                               {
-                                                  SystemKeyword = "DeleteKnowledgebaseCategory",
+                                                  SystemKeyword = "DeleteKnowledgebaseNotebook",
                                                   Enabled = true,
-                                                  Name = "Delete knowledgebase category"
+                                                  Name = "Delete knowledgebase notebook"
                                               },
                                             new ActivityLogType
                                               {
@@ -1740,24 +1526,10 @@ namespace ForeverNote.Services.Installation
                                               {
                                                   SystemKeyword = "DeleteKnowledgebaseArticle",
                                                   Enabled = true,
-                                                  Name = "Delete knowledgebase category"
+                                                  Name = "Delete knowledgebase notebook"
                                               },
                                       };
             await _activityLogTypeRepository.InsertAsync(activityLogTypes);
-        }
-
-        protected virtual async Task InstallCategoryTemplates()
-        {
-            var categoryTemplates = new List<CategoryTemplate>
-                               {
-                                   new CategoryTemplate
-                                       {
-                                           Name = "Products in Grid or Lines",
-                                           ViewPath = "CategoryTemplate.ProductsInGridOrLines",
-                                           DisplayOrder = 1
-                                       },
-                               };
-            await _categoryTemplateRepository.InsertAsync(categoryTemplates);
         }
 
         protected virtual async Task InstallScheduleTasks()
@@ -1809,56 +1581,56 @@ namespace ForeverNote.Services.Installation
                 },
                 new ScheduleTask
                 {
-                    ScheduleTaskName = "Customer reminder - AbandonedCart",
-                    Type = "ForeverNote.Services.Tasks.CustomerReminderAbandonedCartScheduleTask, ForeverNote.Services",
+                    ScheduleTaskName = "User reminder - AbandonedCart",
+                    Type = "ForeverNote.Services.Tasks.UserReminderAbandonedCartScheduleTask, ForeverNote.Services",
                     Enabled = false,
                     StopOnError = false,
                     TimeInterval = 20
                 },
                 new ScheduleTask
                 {
-                    ScheduleTaskName = "Customer reminder - RegisteredCustomer",
-                    Type = "ForeverNote.Services.Tasks.CustomerReminderRegisteredCustomerScheduleTask, ForeverNote.Services",
+                    ScheduleTaskName = "User reminder - RegisteredUser",
+                    Type = "ForeverNote.Services.Tasks.UserReminderRegisteredUserScheduleTask, ForeverNote.Services",
                     Enabled = false,
                     StopOnError = false,
                     TimeInterval = 1440
                 },
                 new ScheduleTask
                 {
-                    ScheduleTaskName = "Customer reminder - LastActivity",
-                    Type = "ForeverNote.Services.Tasks.CustomerReminderLastActivityScheduleTask, ForeverNote.Services",
+                    ScheduleTaskName = "User reminder - LastActivity",
+                    Type = "ForeverNote.Services.Tasks.UserReminderLastActivityScheduleTask, ForeverNote.Services",
                     Enabled = false,
                     StopOnError = false,
                     TimeInterval = 1440
                 },
                 new ScheduleTask
                 {
-                    ScheduleTaskName = "Customer reminder - LastPurchase",
-                    Type = "ForeverNote.Services.Tasks.CustomerReminderLastPurchaseScheduleTask, ForeverNote.Services",
+                    ScheduleTaskName = "User reminder - LastPurchase",
+                    Type = "ForeverNote.Services.Tasks.UserReminderLastPurchaseScheduleTask, ForeverNote.Services",
                     Enabled = false,
                     StopOnError = false,
                     TimeInterval = 1440
                 },
                 new ScheduleTask
                 {
-                    ScheduleTaskName = "Customer reminder - Birthday",
-                    Type = "ForeverNote.Services.Tasks.CustomerReminderBirthdayScheduleTask, ForeverNote.Services",
+                    ScheduleTaskName = "User reminder - Birthday",
+                    Type = "ForeverNote.Services.Tasks.UserReminderBirthdayScheduleTask, ForeverNote.Services",
                     Enabled = false,
                     StopOnError = false,
                     TimeInterval = 1440
                 },
                 new ScheduleTask
                 {
-                    ScheduleTaskName = "Customer reminder - Completed order",
-                    Type = "ForeverNote.Services.Tasks.CustomerReminderCompletedOrderScheduleTask, ForeverNote.Services",
+                    ScheduleTaskName = "User reminder - Completed order",
+                    Type = "ForeverNote.Services.Tasks.UserReminderCompletedOrderScheduleTask, ForeverNote.Services",
                     Enabled = false,
                     StopOnError = false,
                     TimeInterval = 1440
                 },
                 new ScheduleTask
                 {
-                    ScheduleTaskName = "Customer reminder - Unpaid order",
-                    Type = "ForeverNote.Services.Tasks.CustomerReminderUnpaidOrderScheduleTask, ForeverNote.Services",
+                    ScheduleTaskName = "User reminder - Unpaid order",
+                    Type = "ForeverNote.Services.Tasks.UserReminderUnpaidOrderScheduleTask, ForeverNote.Services",
                     Enabled = false,
                     StopOnError = false,
                     TimeInterval = 1440
@@ -1898,102 +1670,77 @@ namespace ForeverNote.Services.Installation
             await _returnRequestActionRepository.InsertAsync(returnRequestActions);
         }
 
-        protected virtual async Task InstallAffiliates()
+        private async Task AddNoteTag(Note note, string tag)
         {
-            var affilate = new Affiliate {
-                Active = true
-            };
-            await _affiliateRepository.InsertAsync(affilate);
-        }
-
-        private async Task AddProductTag(Product product, string tag)
-        {
-            var productTag = _productTagRepository.Table.FirstOrDefault(pt => pt.Name == tag);
-            if (productTag == null)
+            var noteTag = _noteTagRepository.Table.FirstOrDefault(pt => pt.Name == tag);
+            if (noteTag == null)
             {
-                productTag = new ProductTag {
+                noteTag = new NoteTag {
                     Name = tag,
                 };
 
-                await _productTagRepository.InsertAsync(productTag);
+                await _noteTagRepository.InsertAsync(noteTag);
             }
-            productTag.Count = productTag.Count + 1;
-            await _productTagRepository.UpdateAsync(productTag);
-            product.ProductTags.Add(productTag.Name);
-            await _productRepository.UpdateAsync(product);
+            noteTag.Count = noteTag.Count + 1;
+            await _noteTagRepository.UpdateAsync(noteTag);
+            note.NoteTags.Add(noteTag.Name);
+            await _noteRepository.UpdateAsync(note);
         }
 
         private async Task CreateIndexes()
         {
             //version
-            await _versionRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Core.Domain.Common.ForeverNoteVersion>((Builders<Core.Domain.Common.ForeverNoteVersion>.IndexKeys.Ascending(x => x.DataBaseVersion)), new CreateIndexOptions() { Name = "DataBaseVersion", Unique = true }));
+            await _databaseVersionRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<ForeverNoteDatabaseVersion>((Builders<ForeverNoteDatabaseVersion>.IndexKeys.Ascending(x => x.Version)), new CreateIndexOptions() { Name = "DataBaseVersion", Unique = true }));
 
             //Language
             await _lsrRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<LocaleStringResource>((Builders<LocaleStringResource>.IndexKeys.Ascending(x => x.LanguageId).Ascending(x => x.ResourceName)), new CreateIndexOptions() { Name = "Language" }));
             await _lsrRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<LocaleStringResource>((Builders<LocaleStringResource>.IndexKeys.Ascending(x => x.ResourceName)), new CreateIndexOptions() { Name = "ResourceName" }));
 
-            //customer
-            await _customerRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Customer>((Builders<Customer>.IndexKeys.Descending(x => x.CreatedOnUtc).Ascending(x => x.Deleted).Ascending("CustomerRoles._id")), new CreateIndexOptions() { Name = "CreatedOnUtc_1_CustomerRoles._id_1", Unique = false }));
-            await _customerRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Customer>((Builders<Customer>.IndexKeys.Ascending(x => x.LastActivityDateUtc)), new CreateIndexOptions() { Name = "LastActivityDateUtc_1", Unique = false }));
-            await _customerRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Customer>((Builders<Customer>.IndexKeys.Ascending(x => x.CustomerGuid)), new CreateIndexOptions() { Name = "CustomerGuid_1", Unique = false }));
-            await _customerRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Customer>((Builders<Customer>.IndexKeys.Ascending(x => x.Email)), new CreateIndexOptions() { Name = "Email_1", Unique = false }));
+            //user
+            await _userRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<User>((Builders<User>.IndexKeys.Descending(x => x.CreatedOnUtc).Ascending(x => x.Deleted).Ascending("UserRoles._id")), new CreateIndexOptions() { Name = "CreatedOnUtc_1_UserRoles._id_1", Unique = false }));
+            await _userRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<User>((Builders<User>.IndexKeys.Ascending(x => x.LastActivityDateUtc)), new CreateIndexOptions() { Name = "LastActivityDateUtc_1", Unique = false }));
+            await _userRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<User>((Builders<User>.IndexKeys.Ascending(x => x.UserGuid)), new CreateIndexOptions() { Name = "UserGuid_1", Unique = false }));
+            await _userRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<User>((Builders<User>.IndexKeys.Ascending(x => x.Email)), new CreateIndexOptions() { Name = "Email_1", Unique = false }));
 
-            //customer role
-            await _customerRoleProductRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<CustomerRoleProduct>((Builders<CustomerRoleProduct>.IndexKeys.Ascending(x => x.Id).Ascending(x => x.DisplayOrder)), new CreateIndexOptions() { Name = "CustomerRoleId_DisplayOrder", Unique = false }));
+            //user tag history
+            await _userTagNoteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<UserTagNote>((Builders<UserTagNote>.IndexKeys.Ascending(x => x.Id).Ascending(x => x.DisplayOrder)), new CreateIndexOptions() { Name = "UserTagId_DisplayOrder", Unique = false }));
 
-            //customer personalize product 
-            await _customerProductRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<CustomerProduct>((Builders<CustomerProduct>.IndexKeys.Ascending(x => x.CustomerId).Ascending(x => x.DisplayOrder)), new CreateIndexOptions() { Name = "CustomerProduct", Unique = false }));
-            await _customerProductRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<CustomerProduct>((Builders<CustomerProduct>.IndexKeys.Ascending(x => x.CustomerId).Ascending(x => x.ProductId)), new CreateIndexOptions() { Name = "CustomerProduct_Unique", Unique = true }));
-
-            //customer product price
-            await _customerProductPriceRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<CustomerProductPrice>((Builders<CustomerProductPrice>.IndexKeys.Ascending(x => x.CustomerId).Ascending(x => x.ProductId)), new CreateIndexOptions() { Name = "CustomerProduct", Unique = true }));
-
-            //customer tag history
-            await _customerTagProductRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<CustomerTagProduct>((Builders<CustomerTagProduct>.IndexKeys.Ascending(x => x.Id).Ascending(x => x.DisplayOrder)), new CreateIndexOptions() { Name = "CustomerTagId_DisplayOrder", Unique = false }));
-
-            //customer history password
-            await _customerHistoryPasswordRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<CustomerHistoryPassword>((Builders<CustomerHistoryPassword>.IndexKeys.Ascending(x => x.CustomerId).Descending(x => x.CreatedOnUtc)), new CreateIndexOptions() { Name = "CustomerId", Unique = false }));
-
-            //customer note
-            await _customerNoteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<CustomerNote>((Builders<CustomerNote>.IndexKeys.Ascending(x => x.CustomerId).Descending(x => x.CreatedOnUtc)), new CreateIndexOptions() { Name = "CustomerId", Unique = false, Background = true }));
+            //user history password
+            await _userHistoryPasswordRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<UserHistoryPassword>((Builders<UserHistoryPassword>.IndexKeys.Ascending(x => x.UserId).Descending(x => x.CreatedOnUtc)), new CreateIndexOptions() { Name = "UserId", Unique = false }));
 
             //user api
             await _userapiRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<UserApi>((Builders<UserApi>.IndexKeys.Ascending(x => x.Email)), new CreateIndexOptions() { Name = "Email", Unique = true, Background = true }));
 
-            //category
-            await _categoryRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Category>((Builders<Category>.IndexKeys.Ascending(x => x.ShowOnHomePage).Ascending(x => x.DisplayOrder)), new CreateIndexOptions() { Name = "ShowOnHomePage_DisplayOrder_1", Unique = false }));
-            await _categoryRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Category>((Builders<Category>.IndexKeys.Ascending(x => x.ParentCategoryId).Ascending(x => x.DisplayOrder)), new CreateIndexOptions() { Name = "ParentCategoryId_1_DisplayOrder_1", Unique = false }));
-            await _categoryRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Category>((Builders<Category>.IndexKeys.Ascending(x => x.FeaturedProductsOnHomaPage).Ascending(x => x.DisplayOrder)), new CreateIndexOptions() { Name = "FeaturedProductsOnHomaPage_DisplayOrder_1", Unique = false }));
+            //notebook
+            await _notebookRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Notebook>(Builders<Notebook>.IndexKeys.Ascending(x => x.ShowOnHomePage).Ascending(x => x.DisplayOrder), new CreateIndexOptions() { Name = "ShowOnHomePage_DisplayOrder_1", Unique = false }));
+            await _notebookRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Notebook>((Builders<Notebook>.IndexKeys.Ascending(x => x.ParentNotebookId).Ascending(x => x.DisplayOrder)), new CreateIndexOptions() { Name = "ParentNotebookId_1_DisplayOrder_1", Unique = false }));
+            await _notebookRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Notebook>((Builders<Notebook>.IndexKeys.Ascending(x => x.DisplayOrder)), new CreateIndexOptions() { Name = "FeaturedNotesOnHomaPage_DisplayOrder_1", Unique = false }));
 
-            //Product
-            await _productRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Product>((Builders<Product>.IndexKeys.Ascending(x => x.MarkAsNew).Ascending(x => x.CreatedOnUtc)), new CreateIndexOptions() { Name = "MarkAsNew_1_CreatedOnUtc_1", Unique = false }));
-            await _productRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Product>((Builders<Product>.IndexKeys.Ascending(x => x.ShowOnHomePage).Ascending(x => x.DisplayOrder).Ascending(x => x.Name)), new CreateIndexOptions() { Name = "ShowOnHomePage_1_Published_1", Unique = false }));
-            await _productRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Product>((Builders<Product>.IndexKeys.Ascending(x => x.DisplayOrder)), new CreateIndexOptions() { Name = "ParentGroupedProductId_1_DisplayOrder_1", Unique = false }));
-            await _productRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Product>((Builders<Product>.IndexKeys.Ascending(x => x.ProductTags).Ascending(x => x.Name)), new CreateIndexOptions() { Name = "ProductTags._id_1_Name_1", Unique = false }));
-            await _productRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Product>((Builders<Product>.IndexKeys.Ascending(x => x.Name)), new CreateIndexOptions() { Name = "Name_1", Unique = false }));
+            //Note
+            await _noteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Note>((Builders<Note>.IndexKeys.Ascending(x => x.MarkAsNew).Ascending(x => x.CreatedOnUtc)), new CreateIndexOptions() { Name = "MarkAsNew_1_CreatedOnUtc_1", Unique = false }));
+            await _noteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Note>((Builders<Note>.IndexKeys.Ascending(x => x.ShowOnHomePage).Ascending(x => x.DisplayOrder).Ascending(x => x.Name)), new CreateIndexOptions() { Name = "ShowOnHomePage_1_Published_1", Unique = false }));
+            await _noteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Note>((Builders<Note>.IndexKeys.Ascending(x => x.DisplayOrder)), new CreateIndexOptions() { Name = "ParentGroupedNoteId_1_DisplayOrder_1", Unique = false }));
+            await _noteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Note>((Builders<Note>.IndexKeys.Ascending(x => x.NoteTags).Ascending(x => x.Name)), new CreateIndexOptions() { Name = "NoteTags._id_1_Name_1", Unique = false }));
+            await _noteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Note>((Builders<Note>.IndexKeys.Ascending(x => x.Name)), new CreateIndexOptions() { Name = "Name_1", Unique = false }));
 
-            await _productRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Product>((Builders<Product>.IndexKeys.Ascending("ProductCategories.CategoryId").Ascending("ProductCategories.DisplayOrder")), new CreateIndexOptions() { Name = "ProductCategories.CategoryId_1_DisplayOrder_1", Unique = false }));
-            await _productRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Product>((Builders<Product>.IndexKeys.Ascending("ProductCategories.CategoryId").Ascending(x => x.DisplayOrderCategory)), new CreateIndexOptions() { Name = "ProductCategories.CategoryId_1_OrderCategory_1", Unique = false }));
-            await _productRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Product>((Builders<Product>.IndexKeys.Ascending("ProductCategories.CategoryId").Ascending(x => x.Name)), new CreateIndexOptions() { Name = "ProductCategories.CategoryId_1_Name_1", Unique = false }));
-            await _productRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Product>((Builders<Product>.IndexKeys.Ascending("ProductCategories.CategoryId").Ascending(x => x.Sold)), new CreateIndexOptions() { Name = "ProductCategories.CategoryId_1_Sold_1", Unique = false }));
-            await _productRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Product>((Builders<Product>.IndexKeys.Ascending("ProductCategories.CategoryId").Ascending("ProductCategories.IsFeaturedProduct")), new CreateIndexOptions() { Name = "ProductCategories.CategoryId_1_IsFeaturedProduct_1", Unique = false }));
+            await _noteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Note>((Builders<Note>.IndexKeys.Ascending("NoteNotebooks.NotebookId").Ascending("NoteNotebooks.DisplayOrder")), new CreateIndexOptions() { Name = "NoteNotebooks.NotebookId_1_DisplayOrder_1", Unique = false }));
+            await _noteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Note>((Builders<Note>.IndexKeys.Ascending("NoteNotebooks.NotebookId").Ascending(x => x.DisplayOrderNotebook)), new CreateIndexOptions() { Name = "NoteNotebooks.NotebookId_1_OrderNotebook_1", Unique = false }));
+            await _noteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Note>((Builders<Note>.IndexKeys.Ascending("NoteNotebooks.NotebookId").Ascending(x => x.Name)), new CreateIndexOptions() { Name = "NoteNotebooks.NotebookId_1_Name_1", Unique = false }));
+            await _noteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Note>((Builders<Note>.IndexKeys.Ascending("NoteNotebooks.NotebookId")), new CreateIndexOptions() { Name = "NoteNotebooks.NotebookId_1_Sold_1", Unique = false }));
+            await _noteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Note>((Builders<Note>.IndexKeys.Ascending("NoteNotebooks.NotebookId").Ascending("NoteNotebooks.IsFeaturedNote")), new CreateIndexOptions() { Name = "NoteNotebooks.NotebookId_1_IsFeaturedNote_1", Unique = false }));
 
-            await _productRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Product>((Builders<Product>.IndexKeys.Ascending("ProductManufacturers.ManufacturerId")), new CreateIndexOptions() { Name = "ProductManufacturers.ManufacturerId_1_OrderCategory_1", Unique = false }));
-            await _productRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Product>((Builders<Product>.IndexKeys.Ascending("ProductManufacturers.ManufacturerId").Ascending(x => x.Name)), new CreateIndexOptions() { Name = "ProductManufacturers.ManufacturerId_1_Name_1", Unique = false }));
-            await _productRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Product>((Builders<Product>.IndexKeys.Ascending("ProductManufacturers.ManufacturerId").Ascending(x => x.Sold)), new CreateIndexOptions() { Name = "ProductManufacturers.ManufacturerId_1_Sold_1", Unique = false }));
-            await _productRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Product>((Builders<Product>.IndexKeys.Ascending("ProductManufacturers.ManufacturerId").Ascending("ProductManufacturers.IsFeaturedProduct")), new CreateIndexOptions() { Name = "ProductManufacturers.ManufacturerId_1_IsFeaturedProduct_1", Unique = false }));
+            await _noteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Note>((Builders<Note>.IndexKeys.Ascending("NoteManufacturers.ManufacturerId")), new CreateIndexOptions() { Name = "NoteManufacturers.ManufacturerId_1_OrderNotebook_1", Unique = false }));
+            await _noteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Note>((Builders<Note>.IndexKeys.Ascending("NoteManufacturers.ManufacturerId").Ascending(x => x.Name)), new CreateIndexOptions() { Name = "NoteManufacturers.ManufacturerId_1_Name_1", Unique = false }));
+            await _noteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Note>((Builders<Note>.IndexKeys.Ascending("NoteManufacturers.ManufacturerId")), new CreateIndexOptions() { Name = "NoteManufacturers.ManufacturerId_1_Sold_1", Unique = false }));
+            await _noteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Note>((Builders<Note>.IndexKeys.Ascending("NoteManufacturers.ManufacturerId").Ascending("NoteManufacturers.IsFeaturedNote")), new CreateIndexOptions() { Name = "NoteManufacturers.ManufacturerId_1_IsFeaturedNote_1", Unique = false }));
 
-            await _productRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Product>((Builders<Product>.IndexKeys.Ascending("ProductSpecificationAttributes.SpecificationAttributeOptionId").Ascending("ProductSpecificationAttributes.AllowFiltering")), new CreateIndexOptions() { Name = "ProductSpecificationAttributes", Unique = false }));
+            await _noteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Note>((Builders<Note>.IndexKeys.Ascending("NoteSpecificationAttributes.SpecificationAttributeOptionId").Ascending("NoteSpecificationAttributes.AllowFiltering")), new CreateIndexOptions() { Name = "NoteSpecificationAttributes", Unique = false }));
 
-            //Recently Viewed Products
-            await _recentlyViewedProductRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<RecentlyViewedProduct>((Builders<RecentlyViewedProduct>.IndexKeys.Ascending(x => x.CustomerId).Ascending(x => x.ProductId).Descending(x => x.CreatedOnUtc)), new CreateIndexOptions() { Name = "CustomerId.ProductId" }));
+            //Recently Viewed Notes
+            await _recentlyViewedNoteRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<RecentlyViewedNote>((Builders<RecentlyViewedNote>.IndexKeys.Ascending(x => x.UserId).Ascending(x => x.NoteId).Descending(x => x.CreatedOnUtc)), new CreateIndexOptions() { Name = "UserId.NoteId" }));
 
             //message template
             await _messageTemplateRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<MessageTemplate>((Builders<MessageTemplate>.IndexKeys.Ascending(x => x.Name)), new CreateIndexOptions() { Name = "Name", Unique = false }));
-
-            //newsletter
-            await _newslettersubscriptionRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<NewsLetterSubscription>((Builders<NewsLetterSubscription>.IndexKeys.Ascending(x => x.CustomerId)), new CreateIndexOptions() { Name = "CustomerId", Unique = false }));
-            await _newslettersubscriptionRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<NewsLetterSubscription>((Builders<NewsLetterSubscription>.IndexKeys.Ascending(x => x.Email)), new CreateIndexOptions() { Name = "Email", Unique = false }));
 
             //Log
             await _logRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Log>((Builders<Log>.IndexKeys.Descending(x => x.CreatedOnUtc)), new CreateIndexOptions() { Name = "CreatedOnUtc", Unique = false }));
@@ -2007,26 +1754,23 @@ namespace ForeverNote.Services.Installation
             //setting
             await _settingRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<Setting>((Builders<Setting>.IndexKeys.Ascending(x => x.Name)), new CreateIndexOptions() { Name = "Name", Unique = false }));
 
-            //permision
-            await _permissionRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<PermissionRecord>((Builders<PermissionRecord>.IndexKeys.Ascending(x => x.SystemName)), new CreateIndexOptions() { Name = "SystemName", Unique = true }));
-
             //externalauth
-            await _externalAuthenticationRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<ExternalAuthenticationRecord>((Builders<ExternalAuthenticationRecord>.IndexKeys.Ascending(x => x.CustomerId)), new CreateIndexOptions() { Name = "CustomerId" }));
+            await _externalAuthenticationRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<ExternalAuthenticationRecord>((Builders<ExternalAuthenticationRecord>.IndexKeys.Ascending(x => x.UserId)), new CreateIndexOptions() { Name = "UserId" }));
 
             //contactus
             await _contactUsRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<ContactUs>((Builders<ContactUs>.IndexKeys.Ascending(x => x.Email)), new CreateIndexOptions() { Name = "Email", Unique = false }));
             await _contactUsRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<ContactUs>((Builders<ContactUs>.IndexKeys.Descending(x => x.CreatedOnUtc)), new CreateIndexOptions() { Name = "CreatedOnUtc", Unique = false }));
 
-            //customer action
-            await _customerAction.Collection.Indexes.CreateOneAsync(new CreateIndexModel<CustomerAction>((Builders<CustomerAction>.IndexKeys.Ascending(x => x.ActionTypeId)), new CreateIndexOptions() { Name = "ActionTypeId", Unique = false }));
+            //user action
+            await _userAction.Collection.Indexes.CreateOneAsync(new CreateIndexModel<UserAction>((Builders<UserAction>.IndexKeys.Ascending(x => x.ActionTypeId)), new CreateIndexOptions() { Name = "ActionTypeId", Unique = false }));
 
-            await _customerActionHistory.Collection.Indexes.CreateOneAsync(new CreateIndexModel<CustomerActionHistory>((Builders<CustomerActionHistory>.IndexKeys.Ascending(x => x.CustomerId).Ascending(x => x.CustomerActionId)), new CreateIndexOptions() { Name = "Customer_Action", Unique = false }));
+            await _userActionHistory.Collection.Indexes.CreateOneAsync(new CreateIndexModel<UserActionHistory>((Builders<UserActionHistory>.IndexKeys.Ascending(x => x.UserId).Ascending(x => x.UserActionId)), new CreateIndexOptions() { Name = "User_Action", Unique = false }));
 
             //banner
-            await _popupArchive.Collection.Indexes.CreateOneAsync(new CreateIndexModel<PopupArchive>((Builders<PopupArchive>.IndexKeys.Ascending(x => x.CustomerActionId)), new CreateIndexOptions() { Name = "CustomerActionId", Unique = false }));
+            await _popupArchive.Collection.Indexes.CreateOneAsync(new CreateIndexModel<PopupArchive>((Builders<PopupArchive>.IndexKeys.Ascending(x => x.UserActionId)), new CreateIndexOptions() { Name = "UserActionId", Unique = false }));
 
-            //customer reminder
-            await _customerReminderHistoryRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<CustomerReminderHistory>((Builders<CustomerReminderHistory>.IndexKeys.Ascending(x => x.CustomerId).Ascending(x => x.CustomerReminderId)), new CreateIndexOptions() { Name = "CustomerId", Unique = false }));
+            //user reminder
+            await _userReminderHistoryRepository.Collection.Indexes.CreateOneAsync(new CreateIndexModel<UserReminderHistory>((Builders<UserReminderHistory>.IndexKeys.Ascending(x => x.UserId).Ascending(x => x.UserReminderId)), new CreateIndexOptions() { Name = "UserId", Unique = false }));
         }
 
         private async Task CreateTables(string local)
@@ -2062,32 +1806,25 @@ namespace ForeverNote.Services.Installation
 
 
         public virtual async Task InstallData(string defaultUserEmail,
-            string defaultUserPassword, string collation, bool installSampleData = true)
+            string defaultUserPassword, string collation)
         {
-
             defaultUserEmail = defaultUserEmail.ToLower();
             await CreateTables(collation);
             await CreateIndexes();
             await InstallVersion();
             await InstallLanguages();
-            await InstallCustomersAndUsers(defaultUserEmail, defaultUserPassword);
+            await InstallUsersAndUsers(defaultUserEmail, defaultUserPassword);
             await InstallEmailAccounts();
             await InstallMessageTemplates();
-            await InstallCustomerAction();
-            await InstallSettings(installSampleData);
+            await InstallUserAction();
+            await InstallSettings();
             await InstallLocaleResources();
             await InstallActivityLogTypes();
-            await HashDefaultCustomerPassword(defaultUserEmail, defaultUserPassword);
-            await InstallCategoryTemplates();
+            await HashDefaultUserPassword(defaultUserEmail, defaultUserPassword);
             await InstallScheduleTasks();
             await InstallReturnRequestActions();
-            if (installSampleData)
-            {
-                await InstallCategories();
-                await InstallAffiliates();
-            }
+            await InstallNotebooks();
         }
-
 
         #endregion
 

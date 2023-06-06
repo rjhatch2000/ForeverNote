@@ -25,7 +25,7 @@ namespace ForeverNote.Core.Data
 
         public MongoDBContext(IMongoClient client)
         {
-            string connectionString = DataSettingsHelper.ConnectionString();
+            var connectionString = DataSettingsHelper.ConnectionString();
             var databaseName = new MongoUrl(connectionString).DatabaseName;
             _database = client.GetDatabase(databaseName);
             _client = client;

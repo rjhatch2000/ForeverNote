@@ -1,6 +1,5 @@
-﻿using ForeverNote.Core.Domain.Catalog;
-using ForeverNote.Core.Domain.Media;
-using ForeverNote.Services.Catalog;
+﻿using ForeverNote.Core.Domain.Media;
+using ForeverNote.Core.Domain.Notes;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.IO;
@@ -21,13 +20,11 @@ namespace ForeverNote.Services.Media
         /// <returns>Download binary array</returns>
         public static byte[] GetDownloadBits(this IFormFile file)
         {
-            using (var fileStream = file.OpenReadStream())
-            using (var ms = new MemoryStream())
-            {
-                fileStream.CopyTo(ms);
-                var fileBytes = ms.ToArray();
-                return fileBytes;
-            }
+            using var fileStream = file.OpenReadStream();
+            using var ms = new MemoryStream();
+            fileStream.CopyTo(ms);
+            var fileBytes = ms.ToArray();
+            return fileBytes;
         }
 
         /// <summary>
@@ -41,27 +38,27 @@ namespace ForeverNote.Services.Media
         }
 
         /// <summary>
-        /// Get product picture (for shopping cart and order details pages)
+        /// Get note picture (for shopping cart and order details pages)
         /// </summary>
-        /// <param name="product">Product</param>
+        /// <param name="note">Note</param>
         /// <param name="pictureService">Picture service</param>
         /// <returns>Picture</returns>
-        public static async Task<Picture> GetProductPicture(
-            this Product product,
+        public static async Task<Picture> GetNotePicture(
+            this Note note,
             IPictureService pictureService
         )
         {
-            if (product == null)
-                throw new ArgumentNullException("product");
+            if (note == null)
+                throw new ArgumentNullException("note");
             if (pictureService == null)
                 throw new ArgumentNullException("pictureService");
 
             Picture picture = null;
 
-            //let's load the default product picture
+            //let's load the default note picture
             if (picture == null)
             {
-                var pp = product.ProductPictures.OrderBy(x => x.DisplayOrder).FirstOrDefault();
+                var pp = note.NotePictures.OrderBy(x => x.DisplayOrder).FirstOrDefault();
                 if (pp != null)
                     picture = await pictureService.GetPictureById(pp.PictureId);
             }

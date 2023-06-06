@@ -4,10 +4,10 @@ namespace ForeverNote.Services.Logging
 {
     public partial interface IActivityKeywordsProvider
     {
-        IList<string> GetCategorySystemKeywords();
-        IList<string> GetProductSystemKeywords();
+        IList<string> GetNotebookSystemKeywords();
+        IList<string> GetNoteSystemKeywords();
         IList<string> GetManufacturerSystemKeywords();
-        IList<string> GetKnowledgebaseCategorySystemKeywords();
+        IList<string> GetKnowledgebaseNotebookSystemKeywords();
         IList<string> GetKnowledgebaseArticleSystemKeywords();
     }
 }

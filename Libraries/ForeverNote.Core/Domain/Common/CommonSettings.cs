@@ -18,11 +18,6 @@ namespace ForeverNote.Core.Domain.Common
 
         public bool HideAdvertisementsOnAdminArea { get; set; }
 
-        public bool SitemapEnabled { get; set; }
-        public bool SitemapIncludeCategories { get; set; }
-        public bool SitemapIncludeProducts { get; set; }
-        public bool SitemapIncludeImage { get; set; }
-
         /// <summary>
         /// A list of custom URLs to be added to sitemap.xml (include page names only)
         /// </summary>
@@ -86,9 +81,9 @@ namespace ForeverNote.Core.Domain.Common
         public bool AllowToSelectStore { get; set; }
 
         /// <summary>
-        /// Gets or sets to edit product where auction ended
+        /// Gets or sets to edit note where auction ended
         /// </summary>
-        public bool AllowEditProductEndedAuction { get; set; }
+        public bool AllowEditNoteEndedAuction { get; set; }
 
         /// <summary>
         /// Gets or sets - allow user to read "let's encrypted file"

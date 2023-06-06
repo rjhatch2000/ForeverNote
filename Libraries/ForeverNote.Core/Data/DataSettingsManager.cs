@@ -2,9 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace ForeverNote.Core.Data
 {
@@ -16,14 +14,14 @@ namespace ForeverNote.Core.Data
         protected const char separator = ':';
         protected const string filename = "Settings.txt";
 
-        protected string RemoveSpecialCharacters(string str)
+        protected static string RemoveSpecialCharacters(string str)
         {
             var sb = new StringBuilder();
-            foreach (char c in str)
+            foreach (var c in str)
             {
                 if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '.' || c == '_')
                 {
-                    sb.Append(c);
+                    _ = sb.Append(c);
                 }
             }
             return sb.ToString();
@@ -37,7 +35,7 @@ namespace ForeverNote.Core.Data
         protected virtual DataSettings ParseSettings(string text)
         {
             var shellSettings = new DataSettings();
-            if (String.IsNullOrEmpty(text))
+            if (string.IsNullOrEmpty(text))
                 return shellSettings;
 
             var settings = new List<string>();
@@ -123,12 +121,9 @@ namespace ForeverNote.Core.Data
         /// <param name="settings"></param>
         public virtual void SaveSettings(DataSettings settings)
         {
-            if (settings == null)
-                throw new ArgumentNullException("settings");
+            Singleton<DataSettings>.Instance = settings ?? throw new ArgumentNullException(nameof(settings));
 
-            Singleton<DataSettings>.Instance = settings;
-
-            string filePath = Path.Combine(CommonHelper.MapPath("~/App_Data/"), filename); 
+            var filePath = Path.Combine(CommonHelper.MapPath("~/App_Data/"), filename);
             if (!File.Exists(filePath))
             {
                 using (File.Create(filePath))

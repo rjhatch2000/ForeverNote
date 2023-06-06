@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ForeverNote.Core.Domain.Logging
+﻿namespace ForeverNote.Core.Domain.Logging
 {
     /// <summary>
     /// Represents an activity log record
@@ -13,9 +11,9 @@ namespace ForeverNote.Core.Domain.Logging
         public string ActivityLogTypeId { get; set; }
 
         /// <summary>
-        /// Gets or sets the customer identifier
+        /// Gets or sets the user identifier
         /// </summary>
-        public string CustomerId { get; set; }
+        public string UserId { get; set; }
 
         /// <summary>
         /// Gets or sets the IP address
@@ -30,13 +28,6 @@ namespace ForeverNote.Core.Domain.Logging
         /// Gets or sets the activity comment
         /// </summary>
         public string Comment { get; set; }
-
-        /// <summary>
-        /// Gets or sets the date and time of instance creation
-        /// </summary>
-        public DateTime CreatedOnUtc { get; set; }
-
-
     }
 
     /// <summary>

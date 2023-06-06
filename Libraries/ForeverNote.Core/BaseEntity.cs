@@ -6,7 +6,7 @@ namespace ForeverNote.Core
     /// <summary>
     /// Base class for entities
     /// </summary>
-    public abstract partial class BaseEntity: ParentEntity
+    public abstract partial class BaseEntity : ParentEntity
     {
         protected BaseEntity()
         {

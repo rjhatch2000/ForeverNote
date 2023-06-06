@@ -8,7 +8,7 @@ namespace ForeverNote.Core.Domain.Catalog
 
         string Name { get; set; }
 
-        string ParentCategoryId { get; set; }
+        string ParentNotebookId { get; set; }
     }
 
     public class TreeNode

@@ -1,6 +1,6 @@
 ﻿using ForeverNote.Core;
-using ForeverNote.Core.Domain.Customers;
-using ForeverNote.Services.Customers;
+using ForeverNote.Core.Domain.Users;
+using ForeverNote.Services.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -17,10 +17,10 @@ namespace ForeverNote.Services.Authentication
     {
         #region Fields
 
-        private readonly CustomerSettings _customerSettings;
-        private readonly ICustomerService _customerService;
+        private readonly UserSettings _userSettings;
+        private readonly IUserService _userService;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private Customer _cachedCustomer;
+        private User _cachedUser;
 
         #endregion
 
@@ -29,15 +29,15 @@ namespace ForeverNote.Services.Authentication
         /// <summary>
         /// Ctor
         /// </summary>
-        /// <param name="customerSettings">Customer settings</param>
-        /// <param name="customerService">Customer service</param>
+        /// <param name="userSettings">User settings</param>
+        /// <param name="userService">User service</param>
         /// <param name="httpContextAccessor">HTTP context accessor</param>
-        public CookieAuthenticationService(CustomerSettings customerSettings,
-            ICustomerService customerService,
+        public CookieAuthenticationService(UserSettings userSettings,
+            IUserService userService,
             IHttpContextAccessor httpContextAccessor)
         {
-            _customerSettings = customerSettings;
-            _customerService = customerService;
+            _userSettings = userSettings;
+            _userService = userService;
             _httpContextAccessor = httpContextAccessor;
         }
 
@@ -48,21 +48,21 @@ namespace ForeverNote.Services.Authentication
         /// <summary>
         /// Sign in
         /// </summary>
-        /// <param name="customer">Customer</param>
+        /// <param name="user">User</param>
         /// <param name="isPersistent">Whether the authentication session is persisted across multiple requests</param>
-        public virtual async Task SignIn(Customer customer, bool isPersistent)
+        public virtual async Task SignIn(User user, bool isPersistent)
         {
-            if (customer == null)
-                throw new ArgumentNullException(nameof(customer));
+            if (user == null)
+                throw new ArgumentNullException(nameof(user));
 
-            //create claims for customer's username and email
+            //create claims for user's username and email
             var claims = new List<Claim>();
 
-            if (!string.IsNullOrEmpty(customer.Username))
-                claims.Add(new Claim(ClaimTypes.Name, customer.Username, ClaimValueTypes.String, ForeverNoteCookieAuthenticationDefaults.ClaimsIssuer));
+            if (!string.IsNullOrEmpty(user.Username))
+                claims.Add(new Claim(ClaimTypes.Name, user.Username, ClaimValueTypes.String, ForeverNoteCookieAuthenticationDefaults.ClaimsIssuer));
 
-            if (!string.IsNullOrEmpty(customer.Email))
-                claims.Add(new Claim(ClaimTypes.Email, customer.Email, ClaimValueTypes.Email, ForeverNoteCookieAuthenticationDefaults.ClaimsIssuer));
+            if (!string.IsNullOrEmpty(user.Email))
+                claims.Add(new Claim(ClaimTypes.Email, user.Email, ClaimValueTypes.Email, ForeverNoteCookieAuthenticationDefaults.ClaimsIssuer));
 
             //create principal for the current authentication scheme
             var userIdentity = new ClaimsIdentity(claims, ForeverNoteCookieAuthenticationDefaults.AuthenticationScheme);
@@ -79,8 +79,8 @@ namespace ForeverNote.Services.Authentication
             //sign in
             await _httpContextAccessor.HttpContext.SignInAsync(ForeverNoteCookieAuthenticationDefaults.AuthenticationScheme, userPrincipal, authenticationProperties);
 
-            //cache authenticated customer
-            _cachedCustomer = customer;
+            //cache authenticated user
+            _cachedUser = user;
         }
 
         /// <summary>
@@ -88,54 +88,54 @@ namespace ForeverNote.Services.Authentication
         /// </summary>
         public virtual async Task SignOut()
         {
-            //reset cached customer
-            _cachedCustomer = null;
+            //reset cached user
+            _cachedUser = null;
 
             //and sign out from the current authentication scheme
             await _httpContextAccessor.HttpContext.SignOutAsync(ForeverNoteCookieAuthenticationDefaults.AuthenticationScheme);
         }
 
         /// <summary>
-        /// Get authenticated customer
+        /// Get authenticated user
         /// </summary>
-        /// <returns>Customer</returns>
-        public virtual async Task<Customer> GetAuthenticatedCustomer()
+        /// <returns>User</returns>
+        public virtual async Task<User> GetAuthenticatedUser()
         {
-            //whether there is a cached customer
-            if (_cachedCustomer != null)
-                return _cachedCustomer;
+            //whether there is a cached user
+            if (_cachedUser != null)
+                return _cachedUser;
 
             //try to get authenticated user identity
             var authenticateResult = await _httpContextAccessor.HttpContext.AuthenticateAsync(ForeverNoteCookieAuthenticationDefaults.AuthenticationScheme);
             if (!authenticateResult.Succeeded)
                 return null;
 
-            Customer customer = null;
-            if (_customerSettings.UsernamesEnabled)
+            User user = null;
+            if (_userSettings.UsernamesEnabled)
             {
-                //try to get customer by username
+                //try to get user by username
                 var usernameClaim = authenticateResult.Principal.FindFirst(claim => claim.Type == ClaimTypes.Name
                     && claim.Issuer.Equals(ForeverNoteCookieAuthenticationDefaults.ClaimsIssuer, StringComparison.InvariantCultureIgnoreCase));
                 if (usernameClaim != null)
-                    customer = await _customerService.GetCustomerByUsername(usernameClaim.Value);
+                    user = await _userService.GetUserByUsername(usernameClaim.Value);
             }
             else
             {
-                //try to get customer by email
+                //try to get user by email
                 var emailClaim = authenticateResult.Principal.FindFirst(claim => claim.Type == ClaimTypes.Email
                     && claim.Issuer.Equals(ForeverNoteCookieAuthenticationDefaults.ClaimsIssuer, StringComparison.InvariantCultureIgnoreCase));
                 if (emailClaim != null)
-                    customer = await _customerService.GetCustomerByEmail(emailClaim.Value);
+                    user = await _userService.GetUserByEmail(emailClaim.Value);
             }
 
-            //whether the found customer is available
-            if (customer == null || !customer.Active || customer.Deleted || !customer.IsRegistered())
+            //whether the found user is available
+            if (user == null || !user.Active || user.Deleted)
                 return null;
 
-            //cache authenticated customer
-            _cachedCustomer = customer;
+            //cache authenticated user
+            _cachedUser = user;
 
-            return _cachedCustomer;
+            return _cachedUser;
         }
 
         #endregion

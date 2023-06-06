@@ -12,7 +12,7 @@ namespace ForeverNote.Core.Domain.Messages
 
         public string Email { get; set; }
 
-        public string CustomerId { get; set; }
+        public string UserId { get; set; }
 
         public DateTime CreatedDateUtc { get; set; }
 

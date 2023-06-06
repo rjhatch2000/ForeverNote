@@ -1,4 +1,4 @@
-﻿using ForeverNote.Core.Domain.Customers;
+﻿using ForeverNote.Core.Domain.Users;
 using ForeverNote.Core.Domain.Localization;
 using System.Threading.Tasks;
 
@@ -10,20 +10,20 @@ namespace ForeverNote.Core
     public interface IWorkContext
     {
         /// <summary>
-        /// Gets or sets the current customer
+        /// Gets or sets the current user
         /// </summary>
-        Customer CurrentCustomer { get; set; }
+        User CurrentUser { get; set; }
 
         /// <summary>
-        /// Set the current customer by Middleware
+        /// Set the current user by Middleware
         /// </summary>
         /// <returns></returns>
-        Task<Customer> SetCurrentCustomer();
+        Task<User> SetCurrentUser();
 
         /// <summary>
-        /// Gets or sets the original customer (in case the current one is impersonated)
+        /// Gets or sets the original user (in case the current one is impersonated)
         /// </summary>
-        Customer OriginalCustomerIfImpersonated { get; }
+        User OriginalUserIfImpersonated { get; }
 
         /// <summary>
         /// Get or set current user working language
@@ -33,7 +33,7 @@ namespace ForeverNote.Core
         /// <summary>
         /// Set current user working language by Middleware
         /// </summary>
-        Task<Language> SetWorkingLanguage(Customer customer);
+        Task<Language> SetWorkingLanguage(User user);
 
         /// <summary>
         /// Set current user working language

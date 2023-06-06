@@ -1,5 +1,4 @@
 using ForeverNote.Core.Data;
-using ForeverNote.Core.Domain.Catalog;
 using ForeverNote.Core.Domain.Media;
 using ForeverNote.Services.Events;
 using MediatR;

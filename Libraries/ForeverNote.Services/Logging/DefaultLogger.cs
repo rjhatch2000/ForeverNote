@@ -1,6 +1,6 @@
 using ForeverNote.Core;
 using ForeverNote.Core.Data;
-using ForeverNote.Core.Domain.Customers;
+using ForeverNote.Core.Domain.Users;
 using ForeverNote.Core.Domain.Logging;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -157,9 +157,9 @@ namespace ForeverNote.Services.Logging
         /// <param name="logLevel">Log level</param>
         /// <param name="shortMessage">The short message</param>
         /// <param name="fullMessage">The full message</param>
-        /// <param name="customer">The customer to associate log record with</param>
+        /// <param name="user">The user to associate log record with</param>
         /// <returns>A log item</returns>
-        public virtual async Task<Log> InsertLog(LogLevel logLevel, string shortMessage, string fullMessage = "", Customer customer = null)
+        public virtual async Task<Log> InsertLog(LogLevel logLevel, string shortMessage, string fullMessage = "", User user = null)
         {
             var log = new Log
             {
@@ -167,7 +167,7 @@ namespace ForeverNote.Services.Logging
                 ShortMessage = shortMessage,
                 FullMessage = fullMessage,
                 IpAddress = _webHelper.GetCurrentIpAddress(),
-                CustomerId = customer!=null ? customer.Id : "",
+                UserId = user!=null ? user.Id : "",
                 PageUrl = _webHelper.GetThisPageUrl(true),
                 ReferrerUrl = _webHelper.GetUrlReferrer(),
                 CreatedOnUtc = DateTime.UtcNow

@@ -4,23 +4,23 @@ namespace ForeverNote.Services.Logging
 {
     public class ActivityKeywordsProvider: IActivityKeywordsProvider
     {
-        public virtual IList<string> GetCategorySystemKeywords()
+        public virtual IList<string> GetNotebookSystemKeywords()
         {
             var tokens = new List<string>
             {
-                "PublicStore.ViewCategory",
-                "EditCategory",
-                "AddNewCategory",
+                "PublicStore.ViewNotebook",
+                "EditNotebook",
+                "AddNewNotebook",
             };
             return tokens;
         }
-        public virtual IList<string> GetProductSystemKeywords()
+        public virtual IList<string> GetNoteSystemKeywords()
         {
             var tokens = new List<string>
             {
-                "PublicStore.ViewProduct",
-                "EditProduct",
-                "AddNewProduct",
+                "PublicStore.ViewNote",
+                "EditNote",
+                "AddNewNote",
             };
             return tokens;
         }
@@ -35,13 +35,13 @@ namespace ForeverNote.Services.Logging
             return tokens;
         }
 
-        public IList<string> GetKnowledgebaseCategorySystemKeywords()
+        public IList<string> GetKnowledgebaseNotebookSystemKeywords()
         {
             var tokens = new List<string>
             {
-                "CreateKnowledgebaseCategory",
-                "UpdateKnowledgebaseCategory",
-                "DeleteKnowledgebaseCategory"
+                "CreateKnowledgebaseNotebook",
+                "UpdateKnowledgebaseNotebook",
+                "DeleteKnowledgebaseNotebook"
             };
             return tokens;
         }

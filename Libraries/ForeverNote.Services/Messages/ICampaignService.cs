@@ -50,23 +50,6 @@ namespace ForeverNote.Services.Messages
         Task<IPagedList<CampaignHistory>> GetCampaignHistory(Campaign campaign, int pageIndex = 0, int pageSize = int.MaxValue);
 
         /// <summary>
-        /// Gets customer subscriptions
-        /// </summary>
-        /// <param name="Campaign">Campaign</param>
-        /// <returns>CampaignCustomerSubscription</returns>
-        Task<IPagedList<NewsLetterSubscription>> CustomerSubscriptions(Campaign campaign, int pageIndex = 0, int pageSize = int.MaxValue);
-
-        /// <summary>
-        /// Sends a campaign to specified emails
-        /// </summary>
-        /// <param name="campaign">Campaign</param>
-        /// <param name="emailAccount">Email account</param>
-        /// <param name="subscriptions">Subscriptions</param>
-        /// <returns>Total emails sent</returns>
-        Task<int> SendCampaign(Campaign campaign, EmailAccount emailAccount,
-            IEnumerable<NewsLetterSubscription> subscriptions);
-
-        /// <summary>
         /// Sends a campaign to specified email
         /// </summary>
         /// <param name="campaign">Campaign</param>

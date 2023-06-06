@@ -27,10 +27,10 @@ namespace ForeverNote.Services.Messages
         Task DeleteQueuedEmail(QueuedEmail queuedEmail);
 
         /// <summary>
-        /// Deleted a customer emails
+        /// Deleted a user emails
         /// </summary>
         /// <param name="email">email</param>
-        Task DeleteCustomerEmail(string email);
+        Task DeleteUserEmail(string email);
 
         /// <summary>
         /// Gets a queued email by identifier

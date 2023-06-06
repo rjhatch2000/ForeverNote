@@ -75,10 +75,10 @@ namespace ForeverNote.Services.Messages
         }
 
         /// <summary>
-        /// Deleted a customer emails
+        /// Deleted a user emails
         /// </summary>
         /// <param name="email">email</param>
-        public virtual async Task DeleteCustomerEmail(string email)
+        public virtual async Task DeleteUserEmail(string email)
         {
             if (email == null)
                 throw new ArgumentNullException("email");

@@ -1,5 +1,4 @@
 ﻿using ForeverNote.Core.Domain.Localization;
-using System;
 using System.Collections.Generic;
 
 namespace ForeverNote.Core.Domain.Messages
@@ -32,11 +31,6 @@ namespace ForeverNote.Core.Domain.Messages
         /// Gets or sets the collection of locales
         /// </summary>
         public IList<LocalizedProperty> Locales { get; set; }
-        /// <summary>
-        /// Gets or sets the date and time of instance creation
-        /// </summary>
-        public DateTime CreatedOnUtc { get; set; }
-
 
         public virtual ICollection<FormAttribute> FormAttributes
         {

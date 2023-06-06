@@ -1,7 +1,6 @@
-using ForeverNote.Core.Domain.Customers;
+using ForeverNote.Core.Domain.Users;
 using System;
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 
 namespace ForeverNote.Services.Helpers
 {
@@ -27,7 +26,7 @@ namespace ForeverNote.Services.Helpers
         /// Converts the date and time to current user date and time
         /// </summary>
         /// <param name="dt">The date and time (respesents local system time or UTC time) to convert.</param>
-        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in customer time zone.</returns>
+        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in user time zone.</returns>
         DateTime ConvertToUserTime(DateTime dt);
 
         /// <summary>
@@ -35,7 +34,7 @@ namespace ForeverNote.Services.Helpers
         /// </summary>
         /// <param name="dt">The date and time (respesents local system time or UTC time) to convert.</param>
         /// <param name="sourceDateTimeKind">The source datetimekind</param>
-        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in customer time zone.</returns>
+        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in user time zone.</returns>
         DateTime ConvertToUserTime(DateTime dt, DateTimeKind sourceDateTimeKind);
 
         /// <summary>
@@ -43,7 +42,7 @@ namespace ForeverNote.Services.Helpers
         /// </summary>
         /// <param name="dt">The date and time to convert.</param>
         /// <param name="sourceTimeZone">The time zone of dateTime.</param>
-        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in customer time zone.</returns>
+        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in user time zone.</returns>
         DateTime ConvertToUserTime(DateTime dt, TimeZoneInfo sourceTimeZone);
 
         /// <summary>
@@ -52,7 +51,7 @@ namespace ForeverNote.Services.Helpers
         /// <param name="dt">The date and time to convert.</param>
         /// <param name="sourceTimeZone">The time zone of dateTime.</param>
         /// <param name="destinationTimeZone">The time zone to convert dateTime to.</param>
-        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in customer time zone.</returns>
+        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in user time zone.</returns>
         DateTime ConvertToUserTime(DateTime dt, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone);
 
         /// <summary>
@@ -79,11 +78,11 @@ namespace ForeverNote.Services.Helpers
         DateTime ConvertToUtcTime(DateTime dt, TimeZoneInfo sourceTimeZone);
 
         /// <summary>
-        /// Gets a customer time zone
+        /// Gets a user time zone
         /// </summary>
-        /// <param name="customer">Customer</param>
-        /// <returns>Customer time zone; if customer is null, then default store time zone</returns>
-        TimeZoneInfo GetCustomerTimeZone(Customer customer);
+        /// <param name="user">User</param>
+        /// <returns>User time zone; if user is null, then default store time zone</returns>
+        TimeZoneInfo GetUserTimeZone(User user);
 
         /// <summary>
         /// Gets a default store time zone

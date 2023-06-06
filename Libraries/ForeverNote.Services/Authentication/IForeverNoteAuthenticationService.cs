@@ -1,4 +1,4 @@
-using ForeverNote.Core.Domain.Customers;
+using ForeverNote.Core.Domain.Users;
 using System.Threading.Tasks;
 
 namespace ForeverNote.Services.Authentication
@@ -11,9 +11,9 @@ namespace ForeverNote.Services.Authentication
         /// <summary>
         /// Sign in
         /// </summary>
-        /// <param name="customer">Customer</param>
+        /// <param name="user">User</param>
         /// <param name="createPersistentCookie">A value indicating whether to create a persistent cookie</param>
-        Task SignIn(Customer customer, bool createPersistentCookie);
+        Task SignIn(User user, bool createPersistentCookie);
 
         /// <summary>
         /// Sign out
@@ -21,9 +21,9 @@ namespace ForeverNote.Services.Authentication
         Task SignOut();
 
         /// <summary>
-        /// Get authenticated customer
+        /// Get authenticated user
         /// </summary>
-        /// <returns>Customer</returns>
-        Task<Customer> GetAuthenticatedCustomer();
+        /// <returns>User</returns>
+        Task<User> GetAuthenticatedUser();
     }
 }

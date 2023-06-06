@@ -1,6 +1,6 @@
-﻿using ForeverNote.Core.Domain.Catalog;
-using ForeverNote.Core.Domain.Customers;
+﻿using ForeverNote.Core.Domain.Users;
 using ForeverNote.Core.Domain.Messages;
+using ForeverNote.Core.Domain.Notes;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -8,78 +8,48 @@ namespace ForeverNote.Services.Messages
 {
     public partial interface IWorkflowMessageService
     {
-        #region Customer workflow
+        #region User workflow
 
         /// <summary>
-        /// Sends 'New customer' notification message to a store owner
+        /// Sends 'New user' notification message to a store owner
         /// </summary>
-        /// <param name="customer">Customer instance</param>
+        /// <param name="user">User instance</param>
         /// <param name="languageId">Message language identifier</param>
         /// <returns>Queued email identifier</returns>
-        Task<int> SendCustomerRegisteredNotificationMessage(Customer customer, string languageId);
+        Task<int> SendUserRegisteredNotificationMessage(User user, string languageId);
 
         /// <summary>
-        /// Sends a welcome message to a customer
+        /// Sends a welcome message to a user
         /// </summary>
-        /// <param name="customer">Customer instance</param>
+        /// <param name="user">User instance</param>
         /// <param name="languageId">Message language identifier</param>
         /// <returns>Queued email identifier</returns>
-        Task<int> SendCustomerWelcomeMessage(Customer customer, string languageId);
+        Task<int> SendUserWelcomeMessage(User user, string languageId);
 
         /// <summary>
-        /// Sends an email validation message to a customer
+        /// Sends an email validation message to a user
         /// </summary>
-        /// <param name="customer">Customer instance</param>
+        /// <param name="user">User instance</param>
         /// <param name="languageId">Message language identifier</param>
         /// <returns>Queued email identifier</returns>
-        Task<int> SendCustomerEmailValidationMessage(Customer customer, string languageId);
+        Task<int> SendUserEmailValidationMessage(User user, string languageId);
 
         /// <summary>
-        /// Sends password recovery message to a customer
+        /// Sends password recovery message to a user
         /// </summary>
-        /// <param name="customer">Customer instance</param>
+        /// <param name="user">User instance</param>
         /// <param name="languageId">Message language identifier</param>
         /// <returns>Queued email identifier</returns>
-        Task<int> SendCustomerPasswordRecoveryMessage(Customer customer, string languageId);
+        Task<int> SendUserPasswordRecoveryMessage(User user, string languageId);
 
         /// <summary>
-        /// Sends a new customer note added notification to a customer
+        /// Send an email token validation message to a user
         /// </summary>
-        /// <param name="customerNote">Customer note</param>
-        /// <param name="languageId">Message language identifier</param>
-        /// <returns>Queued email identifier</returns>
-        Task<int> SendNewCustomerNoteAddedCustomerNotification(CustomerNote customerNote, string languageId);
-
-        /// <summary>
-        /// Send an email token validation message to a customer
-        /// </summary>
-        /// <param name="customer">Customer instance</param>
+        /// <param name="user">User instance</param>
         /// <param name="token">Token</param>
         /// <param name="languageId">Message language identifier</param>
         /// <returns>Queued email identifier</returns>
-        Task<int> SendCustomerEmailTokenValidationMessage(Customer customer, string token, string languageId);
-
-        #endregion
-
-        #region Newsletter workflow
-
-        /// <summary>
-        /// Sends a newsletter subscription activation message
-        /// </summary>
-        /// <param name="subscription">Newsletter subscription</param>
-        /// <param name="languageId">Language identifier</param>
-        /// <returns>Queued email identifier</returns>
-        Task<int> SendNewsLetterSubscriptionActivationMessage(NewsLetterSubscription subscription,
-            string languageId);
-
-        /// <summary>
-        /// Sends a newsletter subscription deactivation message
-        /// </summary>
-        /// <param name="subscription">Newsletter subscription</param>
-        /// <param name="languageId">Language identifier</param>
-        /// <returns>Queued email identifier</returns>
-        Task<int> SendNewsLetterSubscriptionDeactivationMessage(NewsLetterSubscription subscription,
-            string languageId);
+        Task<int> SendUserEmailTokenValidationMessage(User user, string token, string languageId);
 
         #endregion
 
@@ -88,59 +58,50 @@ namespace ForeverNote.Services.Messages
         /// <summary>
         /// Sends "email a friend" message
         /// </summary>
-        /// <param name="customer">Customer instance</param>
+        /// <param name="user">User instance</param>
         /// <param name="languageId">Message language identifier</param>
-        /// <param name="product">Product instance</param>
-        /// <param name="customerEmail">Customer's email</param>
+        /// <param name="note">Note instance</param>
+        /// <param name="userEmail">User's email</param>
         /// <param name="friendsEmail">Friend's email</param>
         /// <param name="personalMessage">Personal message</param>
         /// <returns>Queued email identifier</returns>
-        Task<int> SendProductEmailAFriendMessage(Customer customer, string languageId,
-            Product product, string customerEmail, string friendsEmail, string personalMessage);
+        Task<int> SendNoteEmailAFriendMessage(User user, string languageId,
+            Note note, string userEmail, string friendsEmail, string personalMessage);
 
         /// <summary>
         /// Sends wishlist "email a friend" message
         /// </summary>
-        /// <param name="customer">Customer</param>
+        /// <param name="user">User</param>
         /// <param name="languageId">Message language identifier</param>
-        /// <param name="customerEmail">Customer's email</param>
+        /// <param name="userEmail">User's email</param>
         /// <param name="friendsEmail">Friend's email</param>
         /// <param name="personalMessage">Personal message</param>
         /// <returns>Queued email identifier</returns>
-        Task<int> SendWishlistEmailAFriendMessage(Customer customer, string languageId,
-             string customerEmail, string friendsEmail, string personalMessage);
+        Task<int> SendWishlistEmailAFriendMessage(User user, string languageId,
+             string userEmail, string friendsEmail, string personalMessage);
 
 
         /// <summary>
         /// Sends "email a friend" message
         /// </summary>
-        /// <param name="customer">Customer instance</param>
+        /// <param name="user">User instance</param>
         /// <param name="languageId">Message language identifier</param>
-        /// <param name="product">Product instance</param>
-        /// <param name="customerEmail">Customer's email</param>
+        /// <param name="note">Note instance</param>
+        /// <param name="userEmail">User's email</param>
         /// <param name="friendsEmail">Friend's email</param>
         /// <param name="personalMessage">Personal message</param>
         /// <returns>Queued email identifier</returns>
-        Task<int> SendProductQuestionMessage(Customer customer, string languageId,
-            Product product, string customerEmail, string fullName, string phone, string message);
+        Task<int> SendNoteQuestionMessage(User user, string languageId,
+            Note note, string userEmail, string fullName, string phone, string message);
 
         #endregion
 
         #region Misc
 
         /// <summary>
-        /// Sends a 'Back in stock' notification message to a customer
-        /// </summary>
-        /// <param name="subscription">Subscription</param>
-        /// <param name="languageId">Message language identifier</param>
-        /// <returns>Queued email identifier</returns>
-        Task<int> SendBackInStockNotification(Customer customer, Product product, BackInStockSubscription subscription, string languageId);
-
-
-        /// <summary>
         /// Sends "contact us" message
         /// </summary>
-        /// <param name="customer">Customer</param>
+        /// <param name="user">User</param>
         /// <param name="languageId">Message language identifier</param>
         /// <param name="senderEmail">Sender email</param>
         /// <param name="senderName">Sender name</param>
@@ -149,16 +110,16 @@ namespace ForeverNote.Services.Messages
         /// <param name="attrInfo">Attr info</param>
         /// <param name="attrXml">Attr xml</param>
         /// <returns>Queued email identifier</returns>
-        Task<int> SendContactUsMessage(Customer customer, string languageId, string senderEmail, string senderName, string subject, string body, string attrInfo, string attrXml);
+        Task<int> SendContactUsMessage(User user, string languageId, string senderEmail, string senderName, string subject, string body, string attrInfo, string attrXml);
 
         /// <summary>
-        /// Sends a customer action event 
+        /// Sends a user action event 
         /// </summary>
-        /// <param name="CustomerAction">Customer action</param>
+        /// <param name="UserAction">User action</param>
         /// <param name="languageId">Message language identifier</param>
-        /// <param name="customerId">Customer identifier</param>
+        /// <param name="userId">User identifier</param>
         /// <returns>Queued email identifier</returns>
-        Task<int> SendCustomerActionEvent_Notification(CustomerAction action, string languageId, Customer customer);
+        Task<int> SendUserActionEvent_Notification(UserAction action, string languageId, User user);
 
         /// <summary>
         /// Send notification

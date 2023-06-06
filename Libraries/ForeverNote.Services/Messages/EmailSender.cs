@@ -1,5 +1,4 @@
 ﻿using ForeverNote.Core.Domain.Messages;
-using ForeverNote.Services.Logging;
 using ForeverNote.Services.Media;
 using MailKit.Net.Smtp;
 using MailKit.Security;

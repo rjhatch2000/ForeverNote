@@ -83,11 +83,6 @@ namespace ForeverNote.Core.Domain.Messages
         public IList<string> AttachedDownloads { get; set; }
 
         /// <summary>
-        /// Gets or sets the date and time of item creation in UTC
-        /// </summary>
-        public DateTime CreatedOnUtc { get; set; }
-
-        /// <summary>
         /// Gets or sets the date and time in UTC before which this email should not be sent
         /// </summary>
         public DateTime? DontSendBeforeDateUtc { get; set; }

@@ -1,5 +1,4 @@
-﻿using ForeverNote.Core.Extensions;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -151,7 +150,7 @@ namespace ForeverNote.Core.Caching
         {
             var items = GetItems();
 
-            items?.Remove(key);
+            _ = (items?.Remove(key));
             return Task.CompletedTask;
         }
 
@@ -169,7 +168,7 @@ namespace ForeverNote.Core.Caching
             var keysToRemove = items.Keys.Where(x => x.ToString().StartsWith(prefix, StringComparison.OrdinalIgnoreCase)).ToList();
             foreach (var key in keysToRemove)
             {
-                items.Remove(key);
+                _ = items.Remove(key);
             }
             return Task.CompletedTask;
         }

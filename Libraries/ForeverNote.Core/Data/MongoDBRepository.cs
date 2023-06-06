@@ -19,7 +19,7 @@ namespace ForeverNote.Core.Data
         /// <summary>
         /// Gets the collection
         /// </summary>
-        protected IMongoCollection<T> _collection;       
+        protected IMongoCollection<T> _collection;
         public IMongoCollection<T> Collection
         {
             get
@@ -49,7 +49,7 @@ namespace ForeverNote.Core.Data
         /// </summary>
         public MongoDBRepository()
         {
-            string connectionString = DataSettingsHelper.ConnectionString();
+            var connectionString = DataSettingsHelper.ConnectionString();
 
             if (!string.IsNullOrEmpty(connectionString))
             {
@@ -69,7 +69,7 @@ namespace ForeverNote.Core.Data
 
         public MongoDBRepository(IMongoClient client)
         {
-            string connectionString = DataSettingsHelper.ConnectionString();
+            var connectionString = DataSettingsHelper.ConnectionString();
             var databaseName = new MongoUrl(connectionString).DatabaseName;
             _database = client.GetDatabase(databaseName);
             _collection = _database.GetCollection<T>(typeof(T).Name);
@@ -124,7 +124,6 @@ namespace ForeverNote.Core.Data
             return entity;
         }
 
-
         /// <summary>
         /// Insert entities
         /// </summary>
@@ -144,16 +143,14 @@ namespace ForeverNote.Core.Data
             return entities;
         }
 
-
         /// <summary>
         /// Update entity
         /// </summary>
         /// <param name="entity">Entity</param>
         public virtual T Update(T entity)
         {
-            _collection.ReplaceOne(x=>x.Id == entity.Id, entity, new ReplaceOptions() { IsUpsert = false });
+            _ = _collection.ReplaceOne(x => x.Id == entity.Id, entity, new ReplaceOptions() { IsUpsert = false });
             return entity;
-
         }
 
         /// <summary>
@@ -162,10 +159,9 @@ namespace ForeverNote.Core.Data
         /// <param name="entity">Entity</param>
         public virtual async Task<T> UpdateAsync(T entity)
         {
-            await _collection.ReplaceOneAsync(x => x.Id == entity.Id, entity, new ReplaceOptions() { IsUpsert = false });
+            _ = await _collection.ReplaceOneAsync(x => x.Id == entity.Id, entity, new ReplaceOptions() { IsUpsert = false });
             return entity;
         }
-
 
         /// <summary>
         /// Update entities
@@ -173,9 +169,9 @@ namespace ForeverNote.Core.Data
         /// <param name="entities">Entities</param>
         public virtual void Update(IEnumerable<T> entities)
         {
-            foreach (T entity in entities)
+            foreach (var entity in entities)
             {
-                Update(entity);
+                _ = Update(entity);
             }
         }
 
@@ -185,9 +181,9 @@ namespace ForeverNote.Core.Data
         /// <param name="entities">Entities</param>
         public virtual async Task<IEnumerable<T>> UpdateAsync(IEnumerable<T> entities)
         {
-            foreach (T entity in entities)
+            foreach (var entity in entities)
             {
-                await UpdateAsync(entity);
+                _ = await UpdateAsync(entity);
             }
             return entities;
         }
@@ -198,7 +194,7 @@ namespace ForeverNote.Core.Data
         /// <param name="entity">Entity</param>
         public virtual void Delete(T entity)
         {
-            _collection.FindOneAndDelete(e => e.Id == entity.Id); 
+            _ = _collection.FindOneAndDelete(e => e.Id == entity.Id);
         }
 
         /// <summary>
@@ -207,7 +203,7 @@ namespace ForeverNote.Core.Data
         /// <param name="entity">Entity</param>
         public virtual async Task<T> DeleteAsync(T entity)
         {
-            await _collection.DeleteOneAsync(e=>e.Id == entity.Id);
+            _ = await _collection.DeleteOneAsync(e => e.Id == entity.Id);
             return entity;
         }
 
@@ -217,9 +213,9 @@ namespace ForeverNote.Core.Data
         /// <param name="entities">Entities</param>
         public virtual void Delete(IEnumerable<T> entities)
         {
-            foreach (T entity in entities)
+            foreach (var entity in entities)
             {
-                _collection.FindOneAndDeleteAsync(e => e.Id == entity.Id);
+                _ = _collection.FindOneAndDeleteAsync(e => e.Id == entity.Id);
             }
         }
 
@@ -229,16 +225,14 @@ namespace ForeverNote.Core.Data
         /// <param name="entities">Entities</param>
         public virtual async Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities)
         {
-            foreach (T entity in entities)
+            foreach (var entity in entities)
             {
-                await DeleteAsync(entity);
+                _ = await DeleteAsync(entity);
             }
             return entities;
         }
 
-
         #endregion
-
 
         #region Methods
 
@@ -317,7 +311,6 @@ namespace ForeverNote.Core.Data
         {
             return await _collection.CountDocumentsAsync(where);
         }
-
 
         #endregion
 

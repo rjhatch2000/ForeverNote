@@ -1,8 +1,8 @@
-﻿using ForeverNote.Core.Domain.Catalog;
-using ForeverNote.Core.Domain.Common;
-using ForeverNote.Core.Domain.Customers;
+﻿using ForeverNote.Core.Domain.Common;
+using ForeverNote.Core.Domain.Users;
 using ForeverNote.Core.Domain.Localization;
 using ForeverNote.Core.Domain.Messages;
+using ForeverNote.Core.Domain.Notes;
 using ForeverNote.Services.Messages.DotLiquidDrops;
 using MediatR;
 using System.Collections.Generic;
@@ -42,8 +42,7 @@ namespace ForeverNote.Services.Messages
         public virtual string[] GetListOfCampaignAllowedTokens()
         {
             var allowedTokens = LiquidExtensions.GetTokens(
-                typeof(LiquidNewsLetterSubscription),
-                typeof(LiquidCustomer)
+                typeof(LiquidUser)
             );
 
             return allowedTokens.ToArray();
@@ -55,38 +54,36 @@ namespace ForeverNote.Services.Messages
                 typeof(LiquidAskQuestion),
                 typeof(LiquidBackInStockSubscription),
                 typeof(LiquidContactUs),
-                typeof(LiquidCustomer),
+                typeof(LiquidUser),
                 typeof(LiquidEmailAFriend),
-                typeof(LiquidNewsLetterSubscription),
-                typeof(LiquidProduct)
+                typeof(LiquidNote)
             );
 
             return allowedTokens.ToArray();
         }
 
-        public virtual string[] GetListOfCustomerReminderAllowedTokens(CustomerReminderRuleEnum rule)
+        public virtual string[] GetListOfUserReminderAllowedTokens(UserReminderRuleEnum rule)
         {
             var allowedTokens = new List<string>();
 
-            allowedTokens.AddRange(LiquidExtensions.GetTokens(typeof(LiquidCustomer)));
+            allowedTokens.AddRange(LiquidExtensions.GetTokens(typeof(LiquidUser)));
 
             return allowedTokens.ToArray();
         }
 
-        public async Task AddCustomerTokens(LiquidObject liquidObject, Customer customer, Language language, CustomerNote customerNote = null)
+        public async Task AddUserTokens(LiquidObject liquidObject, User user, Language language)
         {
-            var liquidCustomer = new LiquidCustomer(_commonSettings, customer, language, customerNote);
-            liquidObject.Customer = liquidCustomer;
+            var liquidUser = new LiquidUser(_commonSettings, user, language);
+            liquidObject.User = liquidUser;
 
-            await _mediator.EntityTokensAdded(customer, liquidCustomer, liquidObject);
-            await _mediator.EntityTokensAdded(customerNote, liquidCustomer, liquidObject);
+            await _mediator.EntityTokensAdded(user, liquidUser, liquidObject);
         }
 
-        public async Task AddProductTokens(LiquidObject liquidObject, Product product, Language language)
+        public async Task AddNoteTokens(LiquidObject liquidObject, Note note, Language language)
         {
-            var liquidProduct = new LiquidProduct(_commonSettings, product, language);
-            liquidObject.Product = liquidProduct;
-            await _mediator.EntityTokensAdded(product, liquidProduct, liquidObject);
+            var liquidNote = new LiquidNote(_commonSettings, note, language);
+            liquidObject.Note = liquidNote;
+            await _mediator.EntityTokensAdded(note, liquidNote, liquidObject);
         }
 
         #endregion

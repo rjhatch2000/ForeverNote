@@ -4,7 +4,7 @@ namespace ForeverNote.Services.Commands.Models.Common
 {
     public class InsertContactUsCommand : IRequest<bool>
     {
-        public string CustomerId { get; set; }
+        public string UserId { get; set; }
         public string Email { get; set; }
         public string FullName { get; set; }
         public string Subject { get; set; }

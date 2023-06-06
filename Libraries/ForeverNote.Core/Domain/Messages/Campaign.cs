@@ -3,14 +3,13 @@ using System.Collections.Generic;
 
 namespace ForeverNote.Core.Domain.Messages
 {
+    //TODO: Is this needed? Or can I chop it out?
     /// <summary>
     /// Represents a campaign
     /// </summary>
     public partial class Campaign : BaseEntity
     {
-        private ICollection<string> _customerTags;
-        private ICollection<string> _customerRoles;
-        private ICollection<string> _newsletterCategories;
+        private ICollection<string> _userTags;
 
         /// <summary>
         /// Gets or sets the name
@@ -32,46 +31,22 @@ namespace ForeverNote.Core.Domain.Messages
         /// </summary>
         public string LanguageId { get; set; }
 
-        public DateTime? CustomerCreatedDateFrom { get; set; }
-        public DateTime? CustomerCreatedDateTo { get; set; }
-        public DateTime? CustomerLastActivityDateFrom { get; set; }
-        public DateTime? CustomerLastActivityDateTo { get; set; }
-        public DateTime? CustomerLastPurchaseDateFrom { get; set; }
-        public DateTime? CustomerLastPurchaseDateTo { get; set; }
-
-        /// <summary>
-        /// Gets or sets the date and time of instance creation
-        /// </summary>
-        public DateTime CreatedOnUtc { get; set; }
+        public DateTime? UserCreatedDateFrom { get; set; }
+        public DateTime? UserCreatedDateTo { get; set; }
+        public DateTime? UserLastActivityDateFrom { get; set; }
+        public DateTime? UserLastActivityDateTo { get; set; }
 
         /// <summary>
         /// Gets or sets the used email account identifier
         /// </summary>
         public string EmailAccountId { get; set; }
         /// <summary>
-        /// Gets or sets the customer tags
+        /// Gets or sets the user tags
         /// </summary>
-        public virtual ICollection<string> CustomerTags
+        public virtual ICollection<string> UserTags
         {
-            get { return _customerTags ?? (_customerTags = new List<string>()); }
-            protected set { _customerTags = value; }
+            get { return _userTags ?? (_userTags = new List<string>()); }
+            protected set { _userTags = value; }
         }
-        /// <summary>
-        /// Gets or sets the customer roles
-        /// </summary>
-        public virtual ICollection<string> CustomerRoles
-        {
-            get { return _customerRoles ?? (_customerRoles = new List<string>()); }
-            protected set { _customerRoles = value; }
-        }
-        /// <summary>
-        /// Gets or sets the newsletter categories
-        /// </summary>
-        public virtual ICollection<string> NewsletterCategories
-        {
-            get { return _newsletterCategories ?? (_newsletterCategories = new List<string>()); }
-            protected set { _newsletterCategories = value; }
-        }
-
     }
 }

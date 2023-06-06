@@ -11,15 +11,15 @@ namespace ForeverNote.Services.Messages
         /// <param name="popup">Popup</param>        
         Task InsertPopupActive(PopupActive popup);
         /// <summary>
-        /// Gets active banner for customer
+        /// Gets active banner for user
         /// </summary>
         /// <returns>BannerActive</returns>
-        Task<PopupActive> GetActivePopupByCustomerId(string customerId);
+        Task<PopupActive> GetActivePopupByUserId(string userId);
 
         /// <summary>
         /// Move popup to archive
         /// </summary>
-        Task MovepopupToArchive(string id, string customerId);
+        Task MovepopupToArchive(string id, string userId);
 
     }
 }

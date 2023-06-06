@@ -1,22 +1,21 @@
 ﻿using ForeverNote.Core;
+using ForeverNote.Core.Caching;
 using ForeverNote.Core.Data;
+using ForeverNote.Core.Domain.Common;
 using ForeverNote.Core.Domain.Media;
 using ForeverNote.Services.Configuration;
 using ForeverNote.Services.Events;
 using ForeverNote.Services.Logging;
-using ForeverNote.Services.Seo;
-using SkiaSharp;
 using MediatR;
 using Microsoft.AspNetCore.Hosting;
+using MongoDB.Driver;
+using MongoDB.Driver.Linq;
+using SkiaSharp;
 using System;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using MongoDB.Driver;
-using MongoDB.Driver.Linq;
-using ForeverNote.Core.Caching;
-using ForeverNote.Core.Domain.Common;
 
 namespace ForeverNote.Services.Media
 {
@@ -299,7 +298,7 @@ namespace ForeverNote.Services.Media
             switch (defaultPictureType)
             {
                 case PictureType.Avatar:
-                    defaultImageFileName = _settingService.GetSettingByKey("Media.Customer.DefaultAvatarImageName", "default-avatar.jpg");
+                    defaultImageFileName = _settingService.GetSettingByKey("Media.User.DefaultAvatarImageName", "default-avatar.jpg");
                     break;
                 case PictureType.Entity:
                 default:

@@ -1,4 +1,4 @@
-﻿using ForeverNote.Core.Domain.Customers;
+﻿using ForeverNote.Core.Domain.Users;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Threading.Tasks;
 
@@ -30,9 +30,9 @@ namespace ForeverNote.Services.Authentication
         Task<string> ErrorMessage();
 
         /// <summary>
-        /// Get authenticated customer
+        /// Get authenticated user
         /// </summary>
-        /// <returns>Customer</returns>
-        Task<Customer> GetAuthenticatedCustomer();
+        /// <returns>User</returns>
+        Task<User> GetAuthenticatedUser();
     }
 }

@@ -1,6 +1,5 @@
 ﻿using ForeverNote.Core.Caching;
 using ForeverNote.Core.Data;
-using ForeverNote.Core.Domain.Catalog;
 using ForeverNote.Core.Domain.Messages;
 using ForeverNote.Services.Events;
 using MediatR;

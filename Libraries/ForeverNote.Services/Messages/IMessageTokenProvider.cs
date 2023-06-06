@@ -1,17 +1,17 @@
-﻿using ForeverNote.Core.Domain.Catalog;
-using ForeverNote.Core.Domain.Customers;
+﻿using ForeverNote.Core.Domain.Users;
 using ForeverNote.Core.Domain.Localization;
 using ForeverNote.Core.Domain.Messages;
+using ForeverNote.Core.Domain.Notes;
 using System.Threading.Tasks;
 
 namespace ForeverNote.Services.Messages
 {
     public partial interface IMessageTokenProvider
     {
-        Task AddCustomerTokens(LiquidObject liquidObject, Customer customer, Language language, CustomerNote customerNote = null);
-        Task AddProductTokens(LiquidObject liquidObject, Product product, Language language);
+        Task AddUserTokens(LiquidObject liquidObject, User user, Language language);
+        Task AddNoteTokens(LiquidObject liquidObject, Note note, Language language);
         string[] GetListOfCampaignAllowedTokens();
         string[] GetListOfAllowedTokens();
-        string[] GetListOfCustomerReminderAllowedTokens(CustomerReminderRuleEnum rule);
+        string[] GetListOfUserReminderAllowedTokens(UserReminderRuleEnum rule);
     }
 }

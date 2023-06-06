@@ -1,5 +1,4 @@
-﻿using ForeverNote.Core;
-using ForeverNote.Core.Caching;
+﻿using ForeverNote.Core.Caching;
 using ForeverNote.Core.Configuration;
 using ForeverNote.Core.Data;
 using ForeverNote.Core.Domain.Common;
@@ -11,7 +10,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 

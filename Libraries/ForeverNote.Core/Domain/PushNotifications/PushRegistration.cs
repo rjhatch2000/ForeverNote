@@ -4,7 +4,7 @@ namespace ForeverNote.Core.Domain.PushNotifications
 {
     public class PushRegistration : BaseEntity
     {
-        public string CustomerId { get; set; }
+        public string UserId { get; set; }
 
         public bool Allowed { get; set; }
 

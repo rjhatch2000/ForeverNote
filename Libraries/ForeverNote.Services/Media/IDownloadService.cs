@@ -1,6 +1,4 @@
-using ForeverNote.Core.Domain.Catalog;
 using ForeverNote.Core.Domain.Media;
-using ForeverNote.Core.Domain.Orders;
 using System;
 using System.Threading.Tasks;
 

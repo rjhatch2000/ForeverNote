@@ -1,13 +1,11 @@
 using ForeverNote.Core;
 using ForeverNote.Core.Configuration;
 using ForeverNote.Core.Domain.Localization;
-using ForeverNote.Core.Domain.Security;
 using ForeverNote.Services.Configuration;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace ForeverNote.Services.Localization
 {
@@ -167,114 +165,5 @@ namespace ForeverNote.Services.Localization
 
             return result;
         }
-
-
-        /// <summary>
-        /// Get localized value of permission
-        /// We don't have UI to manage permission localizable name. That's why we're using this extension method
-        /// </summary>
-        /// <param name="permissionRecord">Permission record</param>
-        /// <param name="localizationService">Localization service</param>
-        /// <param name="workContext">Work context</param>
-        /// <returns>Localized value</returns>
-        public static string GetLocalizedPermissionName(this PermissionRecord permissionRecord,
-            ILocalizationService localizationService, IWorkContext workContext)
-        {
-            if (workContext == null)
-                throw new ArgumentNullException("workContext");
-
-            return GetLocalizedPermissionName(permissionRecord, localizationService, workContext.WorkingLanguage.Id);
-        }
-        /// <summary>
-        /// Get localized value of enum
-        /// We don't have UI to manage permission localizable name. That's why we're using this extension method
-        /// </summary>
-        /// <param name="permissionRecord">Permission record</param>
-        /// <param name="localizationService">Localization service</param>
-        /// <param name="languageId">Language identifier</param>
-        /// <returns>Localized value</returns>
-        public static string GetLocalizedPermissionName(this PermissionRecord permissionRecord,
-            ILocalizationService localizationService, string languageId)
-        {
-            if (permissionRecord == null)
-                throw new ArgumentNullException("permissionRecord");
-
-            if (localizationService == null)
-                throw new ArgumentNullException("localizationService");
-
-            //localized value
-            string resourceName = string.Format("Permission.{0}", permissionRecord.SystemName);
-            string result = localizationService.GetResource(resourceName, languageId, false, "", true);
-
-            //set default value if required
-            if (String.IsNullOrEmpty(result))
-                result = permissionRecord.Name;
-
-            return result;
-        }
-        /// <summary>
-        /// Save localized name of a permission
-        /// </summary>
-        /// <param name="permissionRecord">Permission record</param>
-        /// <param name="localizationService">Localization service</param>
-        /// <param name="languageService">Language service</param>
-        public static async Task SaveLocalizedPermissionName(this PermissionRecord permissionRecord,
-            ILocalizationService localizationService, ILanguageService languageService)
-        {
-            if (permissionRecord == null)
-                throw new ArgumentNullException("permissionRecord");
-            if (localizationService == null)
-                throw new ArgumentNullException("localizationService");
-            if (languageService == null)
-                throw new ArgumentNullException("languageService");
-
-            string resourceName = string.Format("Permission.{0}", permissionRecord.SystemName);
-            string resourceValue = permissionRecord.Name;
-
-            foreach (var lang in await languageService.GetAllLanguages(true))
-            {
-                var lsr = await localizationService.GetLocaleStringResourceByName(resourceName, lang.Id, false);
-                if (lsr == null)
-                {
-                    lsr = new LocaleStringResource
-                    {
-                        LanguageId = lang.Id,
-                        ResourceName = resourceName,
-                        ResourceValue = resourceValue
-                    };
-                    await localizationService.InsertLocaleStringResource(lsr);
-                }
-                else
-                {
-                    lsr.ResourceValue = resourceValue;
-                    await localizationService.UpdateLocaleStringResource(lsr);
-                }
-            }
-        }
-        /// <summary>
-        /// Delete a localized name of a permission
-        /// </summary>
-        /// <param name="permissionRecord">Permission record</param>
-        /// <param name="localizationService">Localization service</param>
-        /// <param name="languageService">Language service</param>
-        public static async Task DeleteLocalizedPermissionName(this PermissionRecord permissionRecord,
-            ILocalizationService localizationService, ILanguageService languageService)
-        {
-            if (permissionRecord == null)
-                throw new ArgumentNullException("permissionRecord");
-            if (localizationService == null)
-                throw new ArgumentNullException("localizationService");
-            if (languageService == null)
-                throw new ArgumentNullException("languageService");
-
-            string resourceName = string.Format("Permission.{0}", permissionRecord.SystemName);
-            foreach (var lang in await languageService.GetAllLanguages(true))
-            {
-                var lsr = await localizationService.GetLocaleStringResourceByName(resourceName, lang.Id, false);
-                if (lsr != null)
-                    await localizationService.DeleteLocaleStringResource(lsr);
-            }
-        }
-
     }
 }

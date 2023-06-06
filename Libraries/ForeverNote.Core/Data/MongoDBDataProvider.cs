@@ -1,10 +1,8 @@
-﻿
-namespace ForeverNote.Core.Data
+﻿namespace ForeverNote.Core.Data
 {
     public class MongoDBDataProvider : IDataProvider
     {
         #region Methods
-
 
         /// <summary>
         /// Initialize database

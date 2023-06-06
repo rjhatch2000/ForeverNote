@@ -20,9 +20,9 @@ namespace ForeverNote.Core.Domain
         public string DefaultStoreTheme { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether customers are allowed to select a theme
+        /// Gets or sets a value indicating whether users are allowed to select a theme
         /// </summary>
-        public bool AllowCustomerToSelectTheme { get; set; }
+        public bool AllowUserToSelectTheme { get; set; }
 
         /// <summary>
         /// Gets or sets a picture identifier of the logo. If 0, then the default one will be used

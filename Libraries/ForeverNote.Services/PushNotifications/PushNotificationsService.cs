@@ -7,9 +7,7 @@ using ForeverNote.Services.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using MongoDB.Driver;
@@ -62,10 +60,10 @@ namespace ForeverNote.Services.PushNotifications
         /// <summary>
         /// Gets push receiver
         /// </summary>
-        /// <param name="CustomerId"></param>
-        public virtual async Task<PushRegistration> GetPushReceiverByCustomerId(string CustomerId)
+        /// <param name="UserId"></param>
+        public virtual async Task<PushRegistration> GetPushReceiverByUserId(string UserId)
         {
-            return await _pushRegistratiosnRepository.Table.Where(x => x.CustomerId == CustomerId).FirstOrDefaultAsync();
+            return await _pushRegistratiosnRepository.Table.Where(x => x.UserId == UserId).FirstOrDefaultAsync();
         }
 
         /// <summary>
@@ -87,7 +85,7 @@ namespace ForeverNote.Services.PushNotifications
         }
 
         /// <summary>
-        /// Gets number of customers that accepted push notifications permission popup
+        /// Gets number of users that accepted push notifications permission popup
         /// </summary>
         public virtual Task<int> GetAllowedReceivers()
         {
@@ -95,7 +93,7 @@ namespace ForeverNote.Services.PushNotifications
         }
 
         /// <summary>
-        /// Gets number of customers that denied push notifications permission popup
+        /// Gets number of users that denied push notifications permission popup
         /// </summary>
         public virtual Task<int> GetDeniedReceivers()
         {
@@ -244,17 +242,17 @@ namespace ForeverNote.Services.PushNotifications
         }
 
         /// <summary>
-        /// Sends push notification to specified customer
+        /// Sends push notification to specified user
         /// </summary>
         /// <param name="title"></param>
         /// <param name="text"></param>
         /// <param name="pictureUrl"></param>
-        /// <param name="customerId"></param>
+        /// <param name="userId"></param>
         /// <param name="clickUrl"></param>
         /// <returns>Bool indicating whether message was sent successfully and string result to display</returns>
-        public virtual async Task<(bool, string)> SendPushNotification(string title, string text, string pictureUrl, string customerId, string clickUrl)
+        public virtual async Task<(bool, string)> SendPushNotification(string title, string text, string pictureUrl, string userId, string clickUrl)
         {
-            return await SendPushNotification(title, text, pictureUrl, clickUrl, new List<string> { GetPushReceiverByCustomerId(customerId).Id.ToString() });
+            return await SendPushNotification(title, text, pictureUrl, clickUrl, new List<string> { GetPushReceiverByUserId(userId).Id.ToString() });
         }
 
         /// <summary>

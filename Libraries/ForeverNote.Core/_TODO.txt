@@ -1,0 +1,33 @@
+data base => database
+
+Go through all of the settings to make sure we have exactly what we want.
+remove all "publish" references / "show hidden"
+sku [core] []
+attribute [] []
+manufacturer [core] []
+vendor [core] []
+gtin [core] []
+shipping [core] []
+reviews / rating [] []
+price [] []
+topic [] []
+news [] []
+blog [] []
+sitemap [] []
+"orders" [] []
+store [] []
+anonymous [] []
+compare [] []
+tier [] []
+discount [] []
+course
+lesson
+cart
+bundle
+userrole
+meta
+
+
+Is there a way to find "0 references" for properties / methods / etc
+	https://stackoverflow.com/questions/30974433/how-to-get-list-of-zero-reference-unreferenced-code-in-visual-studio
+	^ That's thanks to Scott!

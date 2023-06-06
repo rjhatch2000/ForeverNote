@@ -1,5 +1,3 @@
-using System;
-
 namespace ForeverNote.Core.Domain.Logging
 {
     /// <summary>
@@ -28,9 +26,9 @@ namespace ForeverNote.Core.Domain.Logging
         public string IpAddress { get; set; }
 
         /// <summary>
-        /// Gets or sets the customer identifier
+        /// Gets or sets the user identifier
         /// </summary>
-        public string CustomerId { get; set; }
+        public string UserId { get; set; }
 
         /// <summary>
         /// Gets or sets the page URL
@@ -41,11 +39,6 @@ namespace ForeverNote.Core.Domain.Logging
         /// Gets or sets the referrer URL
         /// </summary>
         public string ReferrerUrl { get; set; }
-
-        /// <summary>
-        /// Gets or sets the date and time of instance creation
-        /// </summary>
-        public DateTime CreatedOnUtc { get; set; }
 
         /// <summary>
         /// Gets or sets the log level

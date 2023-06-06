@@ -1,5 +1,5 @@
 using ForeverNote.Core;
-using ForeverNote.Core.Domain.Customers;
+using ForeverNote.Core.Domain.Users;
 using ForeverNote.Services.Common;
 using System;
 using System.Collections.ObjectModel;
@@ -52,7 +52,7 @@ namespace ForeverNote.Services.Helpers
         /// Converts the date and time to current user date and time
         /// </summary>
         /// <param name="dt">The date and time (respesents local system time or UTC time) to convert.</param>
-        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in customer time zone.</returns>
+        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in user time zone.</returns>
         public virtual DateTime ConvertToUserTime(DateTime dt)
         {
             return ConvertToUserTime(dt, dt.Kind);
@@ -63,7 +63,7 @@ namespace ForeverNote.Services.Helpers
         /// </summary>
         /// <param name="dt">The date and time (respesents local system time or UTC time) to convert.</param>
         /// <param name="sourceDateTimeKind">The source datetimekind</param>
-        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in customer time zone.</returns>
+        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in user time zone.</returns>
         public virtual DateTime ConvertToUserTime(DateTime dt, DateTimeKind sourceDateTimeKind)
         {
             dt = DateTime.SpecifyKind(dt, sourceDateTimeKind);
@@ -76,7 +76,7 @@ namespace ForeverNote.Services.Helpers
         /// </summary>
         /// <param name="dt">The date and time to convert.</param>
         /// <param name="sourceTimeZone">The time zone of dateTime.</param>
-        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in customer time zone.</returns>
+        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in user time zone.</returns>
         public virtual DateTime ConvertToUserTime(DateTime dt, TimeZoneInfo sourceTimeZone)
         {
             var currentUserTimeZoneInfo = this.CurrentTimeZone;
@@ -89,7 +89,7 @@ namespace ForeverNote.Services.Helpers
         /// <param name="dt">The date and time to convert.</param>
         /// <param name="sourceTimeZone">The time zone of dateTime.</param>
         /// <param name="destinationTimeZone">The time zone to convert dateTime to.</param>
-        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in customer time zone.</returns>
+        /// <returns>A DateTime value that represents time that corresponds to the dateTime parameter in user time zone.</returns>
         public virtual DateTime ConvertToUserTime(DateTime dt, TimeZoneInfo sourceTimeZone, TimeZoneInfo destinationTimeZone)
         {
             return TimeZoneInfo.ConvertTime(dt, sourceTimeZone, destinationTimeZone);
@@ -137,19 +137,19 @@ namespace ForeverNote.Services.Helpers
         }
 
         /// <summary>
-        /// Gets a customer time zone
+        /// Gets a user time zone
         /// </summary>
-        /// <param name="customer">Customer</param>
-        /// <returns>Customer time zone; if customer is null, then default store time zone</returns>
-        public virtual TimeZoneInfo GetCustomerTimeZone(Customer customer)
+        /// <param name="user">User</param>
+        /// <returns>User time zone; if user is null, then default store time zone</returns>
+        public virtual TimeZoneInfo GetUserTimeZone(User user)
         {
             //registered user
             TimeZoneInfo timeZoneInfo = null;
-            if (_dateTimeSettings.AllowCustomersToSetTimeZone)
+            if (_dateTimeSettings.AllowUsersToSetTimeZone)
             {
                 string timeZoneId = string.Empty;
-                if (customer != null)
-                    timeZoneId = customer.GetAttributeFromEntity<string>(SystemCustomerAttributeNames.TimeZoneId);
+                if (user != null)
+                    timeZoneId = user.GetAttributeFromEntity<string>(SystemUserAttributeNames.TimeZoneId);
 
                 try
                 {
@@ -197,7 +197,7 @@ namespace ForeverNote.Services.Helpers
         /// </summary>
         public virtual TimeZoneInfo CurrentTimeZone {
             get {
-                return GetCustomerTimeZone(_workContext.CurrentCustomer);
+                return GetUserTimeZone(_workContext.CurrentUser);
             }
         }
     }

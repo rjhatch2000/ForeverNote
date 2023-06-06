@@ -1,7 +1,6 @@
 ﻿using DotLiquid;
-using ForeverNote.Core.Domain.Catalog;
 using ForeverNote.Core.Domain.Common;
-using ForeverNote.Core.Domain.Localization;
+using ForeverNote.Core.Domain.Notes;
 using System.Collections.Generic;
 
 namespace ForeverNote.Services.Messages.DotLiquidDrops
@@ -10,30 +9,30 @@ namespace ForeverNote.Services.Messages.DotLiquidDrops
     {
 
         private readonly CommonSettings _commonSettings;
-        private readonly Product _product;
+        private readonly Note _note;
 
         public LiquidBackInStockSubscription(
             CommonSettings commonSettings,
-            Product product
+            Note note
         )
         {
             _commonSettings = commonSettings;
-            _product = product;
+            _note = note;
 
             AdditionalTokens = new Dictionary<string, string>();
         }
 
-        public string ProductName
+        public string NoteName
         {
-            get { return _product.Name; }
+            get { return _note.Name; }
         }
 
-        public string ProductUrl
+        public string NoteUrl
         {
             get { return string.Format("{0}{1}{2}",
                 _commonSettings.SslEnabled ? _commonSettings.SecureUrl : _commonSettings.Url,
-                "/product/",
-                _product.Id); }
+                "/note/",
+                _note.Id); }
         }
 
         public IDictionary<string, string> AdditionalTokens { get; set; }
