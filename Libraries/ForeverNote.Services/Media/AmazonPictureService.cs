@@ -2,14 +2,13 @@
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
+using ForeverNote.Core;
 using ForeverNote.Core.Caching;
 using ForeverNote.Core.Configuration;
 using ForeverNote.Core.Data;
-using ForeverNote.Core.Domain.Common;
 using ForeverNote.Core.Domain.Media;
-using ForeverNote.Services.Configuration;
+using ForeverNote.Services.Logging;
 using MediatR;
-using Microsoft.AspNetCore.Hosting;
 using System;
 using System.IO;
 using System.Net;
@@ -20,39 +19,37 @@ namespace ForeverNote.Services.Media
     /// <summary>
     /// Picture service for Amazon
     /// </summary>
-    public partial class AmazonPictureService : PictureService
+    public class AmazonPictureService : PictureService
     {
         #region Fields
 
-        private readonly ForeverNoteConfig _config;
+        private readonly AmazonConfig _config;
         private readonly string _bucketName;
         private readonly string _distributionDomainName;
-        ////private bool _bucketExist = false;
+        private bool _bucketExist = false;
         private readonly IAmazonS3 _s3Client;
 
         #endregion
 
         #region Ctor
 
-        public AmazonPictureService(
-            CommonSettings commonSettings,
-            IRepository<Picture> pictureRepository,
-            ISettingService settingService,
-            ForeverNote.Services.Logging.ILogger logger,
+        public AmazonPictureService(IRepository<Picture> pictureRepository,
+            ILogger logger,
             IMediator mediator,
-            IWebHostEnvironment hostingEnvironment,
-            ICacheManager cacheManager,
+            IWorkContext workContext,
+            ICacheBase cacheBase,
+            IMediaFileStore mediaFileStore,
             MediaSettings mediaSettings,
-            ForeverNoteConfig config
-        ) : base(
-                commonSettings,
-                pictureRepository,
-                settingService,
+            StorageSettings storageSettings,
+            AmazonConfig config)
+            : base(pictureRepository,
                 logger,
                 mediator,
-                hostingEnvironment,
-                cacheManager,
-                mediaSettings)
+                workContext,
+                cacheBase,
+                mediaFileStore,
+                mediaSettings,
+                storageSettings)
         {
             _config = config;
 
@@ -86,34 +83,33 @@ namespace ForeverNote.Services.Media
 
         private async Task CheckBucketExists()
         {
-            //TODO: This has been quite possibly cleaned up drastically, BUT, we don't have the ability to assign the region on this one...
-            await _s3Client.EnsureBucketExistsAsync(_bucketName);
-            ////if (!_bucketExist)
-            ////{
-            ////    _bucketExist = await _s3Client.DoesS3BucketExistAsync(_bucketName);
-            ////    while (_bucketExist == false)
-            ////    {
-            ////        S3Region s3region = S3Region.FindValue(_config.AmazonRegion);
-            ////        var putBucketRequest = new PutBucketRequest {
-            ////            BucketName = _bucketName,
-            ////            BucketRegion = s3region,
-            ////        };
+            if (!_bucketExist)
+            {
 
-            ////        try
-            ////        {
-            ////            EnsureValidResponse(await _s3Client.PutBucketAsync(putBucketRequest), HttpStatusCode.OK);
+                _bucketExist = await Amazon.S3.Util.AmazonS3Util.DoesS3BucketExistV2Async(_s3Client, _bucketName);
+                while (_bucketExist == false)
+                {
+                    var s3Region = S3Region.FindValue(_config.AmazonRegion);
+                    var putBucketRequest = new PutBucketRequest {
+                        BucketName = _bucketName,
+                        BucketRegion = s3Region,
+                    };
 
-            ////        }
-            ////        catch (AmazonS3Exception ex)
-            ////        {
-            ////            if (ex.ErrorCode == "BucketAlreadyOwnedByYou")
-            ////                break;
+                    try
+                    {
+                        EnsureValidResponse(await _s3Client.PutBucketAsync(putBucketRequest), HttpStatusCode.OK);
 
-            ////            throw;
-            ////        }
-            ////        _bucketExist = await _s3Client.DoesS3BucketExistAsync(_bucketName);
-            ////    }
-            ////}
+                    }
+                    catch (AmazonS3Exception ex)
+                    {
+                        if (ex.ErrorCode == "BucketAlreadyOwnedByYou")
+                            break;
+
+                        throw;
+                    }
+                    _bucketExist = await Amazon.S3.Util.AmazonS3Util.DoesS3BucketExistV2Async(_s3Client, _bucketName);
+                }
+            }
         }
 
         /// <summary>
@@ -152,18 +148,37 @@ namespace ForeverNote.Services.Media
         /// </summary>
         /// <param name="thumbFileName">Filename</param>
         /// <returns>Local picture thumb path</returns>
-        protected override string GetThumbLocalPath(string thumbFileName)
+        protected override async Task<string> GetThumbPhysicalPath(string thumbFileName)
         {
+            if (!await GeneratedThumbExists(thumbFileName))
+                return null;
+            
             if (string.IsNullOrEmpty(_distributionDomainName))
             {
-                var url = string.Format("https://{0}.s3.amazonAws.com/{1}", _bucketName, thumbFileName);
-                return url;
+                return await Task.FromResult($"https://{_bucketName}.s3.amazonAws.com/{thumbFileName}");
             }
-            else
-                return string.Format("https://{0}/{1}", _distributionDomainName, thumbFileName);
-
+            return await Task.FromResult($"https://{_distributionDomainName}/{thumbFileName}");
         }
 
+        /// <summary>
+        /// Get a value indicating whether some file (thumb) already exists
+        /// </summary>
+        /// <param name="thumbFileName">Thumb file name</param>
+        /// <returns>Result</returns>
+        private Task<bool> GeneratedThumbExists(string thumbFileName)
+        {
+            try
+            {
+                var getObjectResponse = _s3Client.GetObjectAsync(_bucketName, thumbFileName).GetAwaiter().GetResult();
+                EnsureValidResponse(getObjectResponse, HttpStatusCode.OK);
+
+                return Task.FromResult(getObjectResponse.BucketName == _bucketName || getObjectResponse.Key == thumbFileName);
+            }
+            catch
+            {
+                return Task.FromResult(false);
+            }
+        }
         /// <summary>
         /// Get picture (thumb) URL 
         /// </summary>
@@ -172,49 +187,15 @@ namespace ForeverNote.Services.Media
         /// <returns>Local picture thumb path</returns>
         protected override string GetThumbUrl(string thumbFileName, string storeLocation = null)
         {
-
-            if (string.IsNullOrEmpty(_distributionDomainName))
-            {
-                var url = string.Format("https://{0}.s3.amazonAws.com/{1}", _bucketName, thumbFileName);
-                return url;
-            }
-            else
-                return string.Format("https://{0}/{1}", _distributionDomainName, thumbFileName);
-
-        }
-
-        /// <summary>
-        /// Get a value indicating whether some file (thumb) already exists
-        /// </summary>
-        /// <param name="thumbFilePath">Thumb file path</param>
-        /// <param name="thumbFileName">Thumb file name</param>
-        /// <returns>Result</returns>
-        protected override async Task<bool> GeneratedThumbExists(string thumbFilePath, string thumbFileName)
-        {
-            try
-            {
-                await CheckBucketExists();
-                var getObjectResponse = await _s3Client.GetObjectAsync(_bucketName, thumbFileName);
-                EnsureValidResponse(getObjectResponse, HttpStatusCode.OK);
-
-                if (getObjectResponse.BucketName != _bucketName && getObjectResponse.Key != thumbFileName)
-                    return false;
-
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
+            return string.IsNullOrEmpty(_distributionDomainName) ? $"https://{_bucketName}.s3.amazonAws.com/{thumbFileName}" : $"https://{_distributionDomainName}/{thumbFileName}";
         }
 
         /// <summary>
         /// Save a value indicating whether some file (thumb) already exists
         /// </summary>
-        /// <param name="thumbFilePath">Thumb file path (unused in Amazon S3)</param>
         /// <param name="thumbFileName">Thumb file name</param>
         /// <param name="binary">Picture binary</param>
-        protected override Task SaveThumb(string thumbFilePath, string thumbFileName, byte[] binary)
+        protected override Task SaveThumb(string thumbFileName, byte[] binary)
         {
             CheckBucketExists().Wait();
 

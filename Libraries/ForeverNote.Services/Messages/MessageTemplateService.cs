@@ -144,7 +144,7 @@ namespace ForeverNote.Services.Messages
 
                 query = query.Where(t => t.Name == messageTemplateName);
                 query = query.OrderBy(t => t.Id);
-                var templates = await query.ToListAsync();
+                var templates = query.ToList();
 
                 return templates.FirstOrDefault();
             });
@@ -164,7 +164,7 @@ namespace ForeverNote.Services.Messages
 
                 query = query.OrderBy(t => t.Name);
 
-                return query.ToListAsync();
+                return query.ToList();
             });
         }
 

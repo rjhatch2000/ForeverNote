@@ -28,12 +28,22 @@ namespace ForeverNote.Core.Domain.Users
         /// Gets or sets the username
         /// </summary>
         public string Username { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the email
         /// </summary>
         public string Email { get; set; }
-        
+
+        /// <summary>
+        /// Gets or sets the FirstName
+        /// </summary>
+        public string FirstName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the LastName
+        /// </summary>
+        public string LastName { get; set; }
+
         /// <summary>
         /// Gets or sets the password
         /// </summary>
@@ -112,6 +122,13 @@ namespace ForeverNote.Core.Domain.Users
         /// Last date to change password
         /// </summary>
         public DateTime? PasswordChangeDateUtc { get; set; }
+
+        public bool TwoFactorEnabled { get; set; }
+        public string TwoFactorSecretKey { get; set; }
+        public string TwoFactorValidCode { get; set; }
+        public DateTime TwoFactorCodeValidUntil { get; set; }
+
+        public string PasswordToken { get; set; }
 
         #region Navigation properties
 

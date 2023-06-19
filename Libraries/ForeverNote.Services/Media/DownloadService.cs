@@ -1,10 +1,7 @@
 using ForeverNote.Core.Data;
 using ForeverNote.Core.Domain.Media;
-using ForeverNote.Services.Events;
+using ForeverNote.Core.Extensions;
 using MediatR;
-using MongoDB.Bson;
-using MongoDB.Driver;
-using MongoDB.Driver.Linq;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,11 +11,12 @@ namespace ForeverNote.Services.Media
     /// <summary>
     /// Download service
     /// </summary>
-    public partial class DownloadService : IDownloadService
+    public class DownloadService : IDownloadService
     {
         #region Fields
 
         private readonly IRepository<Download> _downloadRepository;
+        private readonly IStoreFilesContext _storeFilesContext;
         private readonly IMediator _mediator;
 
         #endregion
@@ -29,11 +27,14 @@ namespace ForeverNote.Services.Media
         /// Ctor
         /// </summary>
         /// <param name="downloadRepository">Download repository</param>
+        /// <param name="storeFilesContext">Store Files Context</param>
         /// <param name="mediator">Mediator</param>
         public DownloadService(IRepository<Download> downloadRepository,
+            IStoreFilesContext storeFilesContext,
             IMediator mediator)
         {
             _downloadRepository = downloadRepository;
+            _storeFilesContext = storeFilesContext;
             _mediator = mediator;
         }
 
@@ -51,17 +52,16 @@ namespace ForeverNote.Services.Media
             if (string.IsNullOrEmpty(downloadId))
                 return null;
 
-            var _download = await _downloadRepository.GetByIdAsync(downloadId);
-            if (!_download.UseDownloadUrl)
-                _download.DownloadBinary = await DownloadAsBytes(_download.DownloadObjectId);
+            var download = await _downloadRepository.GetByIdAsync(downloadId);
+            if (download is { UseDownloadUrl: false })
+                download.DownloadBinary = await DownloadAsBytes(download.DownloadObjectId);
 
-            return _download;
+            return download;
         }
 
-        protected virtual async Task<byte[]> DownloadAsBytes(ObjectId objectId)
+        protected virtual async Task<byte[]> DownloadAsBytes(string objectId)
         {
-            var bucket = new MongoDB.Driver.GridFS.GridFSBucket(_downloadRepository.Database);
-            var binary = await bucket.DownloadAsBytesAsync(objectId, new MongoDB.Driver.GridFS.GridFSDownloadOptions() { CheckMD5 = true, Seekable = true });
+            var binary = await _storeFilesContext.BucketDownload(objectId);
             return binary;
         }
         /// <summary>
@@ -77,25 +77,12 @@ namespace ForeverNote.Services.Media
             var query = from o in _downloadRepository.Table
                         where o.DownloadGuid == downloadGuid
                         select o;
-            var order = await query.FirstOrDefaultAsync();
-            if (!order.UseDownloadUrl)
+
+            var order = query.FirstOrDefault();
+            if (order is { UseDownloadUrl: false })
                 order.DownloadBinary = await DownloadAsBytes(order.DownloadObjectId);
 
-            return order;
-        }
-
-        /// <summary>
-        /// Deletes a download
-        /// </summary>
-        /// <param name="download">Download</param>
-        public virtual async Task DeleteDownload(Download download)
-        {
-            if (download == null)
-                throw new ArgumentNullException("download");
-
-            await _downloadRepository.DeleteAsync(download);
-
-            await _mediator.EntityDeleted(download);
+            return await Task.FromResult(order);
         }
 
         /// <summary>
@@ -105,12 +92,10 @@ namespace ForeverNote.Services.Media
         public virtual async Task InsertDownload(Download download)
         {
             if (download == null)
-                throw new ArgumentNullException("download");
+                throw new ArgumentNullException(nameof(download));
             if (!download.UseDownloadUrl)
             {
-                var bucket = new MongoDB.Driver.GridFS.GridFSBucket(_downloadRepository.Database);
-                var id = await bucket.UploadFromBytesAsync(download.Filename, download.DownloadBinary);
-                download.DownloadObjectId = id;
+                download.DownloadObjectId = await _storeFilesContext.BucketUploadFromBytes(download.Filename, download.DownloadBinary);
             }
 
             download.DownloadBinary = null;
@@ -126,11 +111,29 @@ namespace ForeverNote.Services.Media
         public virtual async Task UpdateDownload(Download download)
         {
             if (download == null)
-                throw new ArgumentNullException("download");
+                throw new ArgumentNullException(nameof(download));
 
             await _downloadRepository.UpdateAsync(download);
 
             await _mediator.EntityUpdated(download);
+        }
+
+        /// <summary>
+        /// Deletes a download
+        /// </summary>
+        /// <param name="download">Download</param>
+        public virtual async Task DeleteDownload(Download download)
+        {
+            if (download == null)
+                throw new ArgumentNullException(nameof(download));
+
+            await _downloadRepository.DeleteAsync(download);
+
+            //delete from bucket
+            if(!string.IsNullOrEmpty(download.DownloadObjectId))
+                await _storeFilesContext.BucketDelete(download.DownloadObjectId);
+
+            await _mediator.EntityDeleted(download);
         }
 
         #endregion

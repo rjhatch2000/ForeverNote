@@ -1,4 +1,3 @@
-using MongoDB.Bson;
 using System;
 
 namespace ForeverNote.Core.Domain.Media
@@ -8,6 +7,11 @@ namespace ForeverNote.Core.Domain.Media
     /// </summary>
     public partial class Download : BaseEntity
     {
+        /////// <summary>
+        /////// Gets or sets a customer identifier
+        /////// </summary>
+        ////public string CustomerId { get; set; }
+
         /// <summary>
         /// Gets or sets a GUID
         /// </summary>
@@ -31,7 +35,7 @@ namespace ForeverNote.Core.Domain.Media
         /// <summary>
         /// Gets or sets the download binary
         /// </summary>
-        public ObjectId DownloadObjectId { get; set; }
+        public string DownloadObjectId { get; set; }
 
         /// <summary>
         /// The mime-type of the download
@@ -48,10 +52,14 @@ namespace ForeverNote.Core.Domain.Media
         /// </summary>
         public string Extension { get; set; }
 
-        /// <summary>
-        /// Gets or sets a value indicating whether the download is new
-        /// </summary>
-        public bool IsNew { get; set; }
-    }
+        /////// <summary>
+        /////// Gets or sets an download type
+        /////// </summary>
+        ////public DownloadType DownloadType { get; set; }
 
+        /// <summary>
+        /// Gets or sets an object reference identifier
+        /// </summary>
+        public string ReferenceId { get; set; }
+    }
 }

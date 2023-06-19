@@ -7,7 +7,7 @@ namespace ForeverNote.Services.Media
     /// <summary>
     /// Download service interface
     /// </summary>
-    public partial interface IDownloadService
+    public interface IDownloadService
     {
         /// <summary>
         /// Gets a download
@@ -24,12 +24,6 @@ namespace ForeverNote.Services.Media
         Task<Download> GetDownloadByGuid(Guid downloadGuid);
 
         /// <summary>
-        /// Deletes a download
-        /// </summary>
-        /// <param name="download">Download</param>
-        Task DeleteDownload(Download download);
-
-        /// <summary>
         /// Inserts a download
         /// </summary>
         /// <param name="download">Download</param>
@@ -40,5 +34,12 @@ namespace ForeverNote.Services.Media
         /// </summary>
         /// <param name="download">Download</param>
         Task UpdateDownload(Download download);
+
+        /// <summary>
+        /// Deletes a download
+        /// </summary>
+        /// <param name="download">Download</param>
+        Task DeleteDownload(Download download);
+
     }
 }

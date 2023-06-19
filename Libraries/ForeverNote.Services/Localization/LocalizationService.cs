@@ -129,11 +129,11 @@ namespace ForeverNote.Services.Localization
                         orderby lsr.ResourceName
                         where lsr.LanguageId == languageId && lsr.ResourceName == resourceName
                         select lsr;
-            var localeStringResource = query.FirstOrDefaultAsync();
+            var localeStringResource = query.FirstOrDefault();
 
             if (localeStringResource == null && logIfNotFound)
                 _logger.Warning(string.Format("Resource string ({0}) not found. Language ID = {1}", resourceName, languageId));
-            return localeStringResource;
+            return Task.FromResult(localeStringResource);
         }
 
         /// <summary>
@@ -350,9 +350,9 @@ namespace ForeverNote.Services.Localization
 
                 //do not use "Insert"/"Update" methods because they clear cache
                 //let's bulk insert
-                var resource = await (from l in _lsrRepository.Table
+                var resource = (from l in _lsrRepository.Table
                                 where l.ResourceName.ToLowerInvariant() == name.ToLowerInvariant() && l.LanguageId == language.Id
-                                select l).FirstOrDefaultAsync();
+                                select l).FirstOrDefault();
 
                 if (resource != null)
                 {

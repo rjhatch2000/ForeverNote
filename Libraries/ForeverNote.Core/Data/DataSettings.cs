@@ -1,43 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace ForeverNote.Core.Data
+﻿namespace ForeverNote.Core.Data
 {
     /// <summary>
     /// Data settings (connection string information)
     /// </summary>
     public partial class DataSettings
     {
-        /// <summary>
-        /// Ctor
-        /// </summary>
-        public DataSettings()
-        {
-            RawDataSettings=new Dictionary<string, string>();
-        }
-
-        /// <summary>
-        /// Data provider
-        /// </summary>
-        public string DataProvider { get; set; }
 
         /// <summary>
         /// Connection string
         /// </summary>
-        public string DataConnectionString { get; set; }
+        public string ConnectionString { get; set; }
 
         /// <summary>
-        /// Raw settings file
+        /// Database type
         /// </summary>
-        public IDictionary<string, string> RawDataSettings { get; private set; }
+        public DbProvider DbProvider { get; set; }
 
-        /// <summary>
-        /// A value indicating whether entered information is valid
-        /// </summary>
-        /// <returns></returns>
         public bool IsValid()
         {
-            return !String.IsNullOrEmpty(this.DataProvider) && !String.IsNullOrEmpty(this.DataConnectionString);
+            return !string.IsNullOrEmpty(ConnectionString);
         }
     }
 }

@@ -1,19 +1,18 @@
 ﻿using ForeverNote.Core;
 using ForeverNote.Core.Caching;
+using ForeverNote.Core.Caching.Constants;
 using ForeverNote.Core.Data;
 using ForeverNote.Core.Domain.Common;
+using ForeverNote.Core.Domain.Logging;
 using ForeverNote.Core.Domain.Media;
-using ForeverNote.Services.Configuration;
-using ForeverNote.Services.Events;
+using ForeverNote.Core.Extensions;
 using ForeverNote.Services.Logging;
 using MediatR;
-using Microsoft.AspNetCore.Hosting;
-using MongoDB.Driver;
-using MongoDB.Driver.Linq;
 using SkiaSharp;
 using System;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,36 +21,20 @@ namespace ForeverNote.Services.Media
     /// <summary>
     /// Picture service
     /// </summary>
-    public partial class PictureService : IPictureService
+    public class PictureService : IPictureService
     {
-        /// <summary>
-        /// Key for caching
-        /// </summary>
-        /// <remarks>
-        /// {0} : picture ID
-        /// {1} : target size
-        /// {2} : showDefaultPicture
-        /// {3} : storeLocation
-        /// {4} : pictureType
-        /// </remarks>
-        private const string PICTURE_BY_KEY = "ForeverNote.picture-{0}-{1}-{2}-{3}-{4}";
-
-        #region Const
-
-        private const int MULTIPLE_THUMB_DIRECTORIES_LENGTH = 3;
-
-        #endregion
+        private readonly CommonSettings _commonSettings;
 
         #region Fields
 
-        private readonly CommonSettings _commonSettings;
         private readonly IRepository<Picture> _pictureRepository;
-        private readonly ISettingService _settingService;
         private readonly ILogger _logger;
         private readonly IMediator _mediator;
-        private readonly IWebHostEnvironment _hostingEnvironment;
-        private readonly ICacheManager _cacheManager;
+        private readonly IWorkContext _workContext;
+        private readonly ICacheBase _cacheBase;
+        private readonly IMediaFileStore _mediaFileStore;
         private readonly MediaSettings _mediaSettings;
+        private readonly StorageSettings _storageSettings;
 
         #endregion
 
@@ -61,32 +44,33 @@ namespace ForeverNote.Services.Media
         /// Ctor
         /// </summary>
         /// <param name="pictureRepository">Picture repository</param>
-        /// <param name="settingService">Setting service</param>
         /// <param name="logger">Logger</param>
         /// <param name="mediator">Mediator</param>
-        /// <param name="hostingEnvironment">hostingEnvironment</param>
-        /// <param name="storeContext">Current store</param>
-        /// <param name="cacheManager">Cache manager</param>
+        /// <param name="workContext">Current context</param>
+        /// <param name="cacheBase">Cache manager</param>
+        /// <param name="mediaFileStore">Media file storage</param>
         /// <param name="mediaSettings">Media settings</param>
+        /// <param name="storageSettings">Storage settings</param>
         public PictureService(
             CommonSettings commonSettings,
             IRepository<Picture> pictureRepository,
-            ISettingService settingService,
             ILogger logger,
             IMediator mediator,
-            IWebHostEnvironment hostingEnvironment,
-            ICacheManager cacheManager,
-            MediaSettings mediaSettings
-        )
+            IWorkContext workContext,
+            ICacheBase cacheBase,
+            IMediaFileStore mediaFileStore,
+            MediaSettings mediaSettings,
+            StorageSettings storageSettings)
         {
             _commonSettings = commonSettings;
             _pictureRepository = pictureRepository;
-            _settingService = settingService;
             _logger = logger;
             _mediator = mediator;
-            _hostingEnvironment = hostingEnvironment;
-            _cacheManager = cacheManager;
+            _workContext = workContext;
+            _cacheBase = cacheBase;
+            _mediaFileStore = mediaFileStore;
             _mediaSettings = mediaSettings;
+            _storageSettings = storageSettings;
         }
 
         #endregion
@@ -98,13 +82,13 @@ namespace ForeverNote.Services.Media
         /// </summary>
         /// <param name="mimeType">Mime type</param>
         /// <returns>File extension</returns>
-        protected virtual string GetFileExtensionFromMimeType(string mimeType)
+        private string GetFileExtensionFromMimeType(string mimeType)
         {
             if (mimeType == null)
                 return null;
 
-            string[] parts = mimeType.Split('/');
-            string lastPart = parts[parts.Length - 1];
+            var parts = mimeType.Split('/');
+            var lastPart = parts[^1];
             switch (lastPart)
             {
                 case "pjpeg":
@@ -116,6 +100,8 @@ namespace ForeverNote.Services.Media
                 case "x-icon":
                     lastPart = "ico";
                     break;
+                default:
+                    break;
             }
             return lastPart;
         }
@@ -126,14 +112,15 @@ namespace ForeverNote.Services.Media
         /// <param name="pictureId">Picture identifier</param>
         /// <param name="mimeType">MIME type</param>
         /// <returns>Picture binary</returns>
-        protected virtual byte[] LoadPictureFromFile(string pictureId, string mimeType)
+        protected virtual async Task<byte[]> LoadPictureFromFile(string pictureId, string mimeType)
         {
-            string lastPart = GetFileExtensionFromMimeType(mimeType);
-            string fileName = string.Format("{0}_0.{1}", pictureId, lastPart);
-            var filePath = GetPictureLocalPath(fileName);
-            if (!File.Exists(filePath))
-                return new byte[0];
-            return File.ReadAllBytes(filePath);
+            var lastPart = GetFileExtensionFromMimeType(mimeType);
+            var fileName = $"{pictureId}_0.{lastPart}";
+            var filePath = await GetPicturePhysicalPath(fileName);
+            if (string.IsNullOrEmpty(filePath))
+                return Array.Empty<byte>();
+
+            return await File.ReadAllBytesAsync(filePath);
         }
 
 
@@ -143,45 +130,35 @@ namespace ForeverNote.Services.Media
         /// <param name="picture">Picture</param>
         protected virtual Task DeletePictureThumbs(Picture picture)
         {
-            string filter = string.Format("{0}*.*", picture.Id);
-            var thumbDirectoryPath = Path.Combine(_hostingEnvironment.WebRootPath, "content/images/thumbs");
-            string[] currentFiles = System.IO.Directory.GetFiles(thumbDirectoryPath, filter, SearchOption.AllDirectories);
-            foreach (string currentFileName in currentFiles)
+            var filter = $"{picture.Id}*.*";
+            var thumbDirectoryPath = _mediaFileStore.GetDirectoryInfo(CommonPath.ImageThumbPath);
+            if (thumbDirectoryPath == null) return Task.CompletedTask;
+            var currentFiles = System.IO.Directory.GetFiles(thumbDirectoryPath.PhysicalPath, filter, SearchOption.AllDirectories);
+            foreach (var currentFileName in currentFiles)
             {
-                var thumbFilePath = GetThumbLocalPath(currentFileName);
                 try
                 {
-                    File.Delete(thumbFilePath);
+                    if (File.Exists(currentFileName))
+                        File.Delete(currentFileName);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _logger.InsertLog(LogLevel.Error, ex.Message);
+                }
             }
             return Task.CompletedTask;
         }
 
         /// <summary>
-        /// Get picture (thumb) local path
+        /// Get picture (thumb) physical path
         /// </summary>
         /// <param name="thumbFileName">Filename</param>
-        /// <returns>Local picture thumb path</returns>
-        protected virtual string GetThumbLocalPath(string thumbFileName)
+        /// <returns>Local picture physical path</returns>
+        protected virtual async Task<string> GetThumbPhysicalPath(string thumbFileName)
         {
-            var thumbsDirectoryPath = Path.Combine(_hostingEnvironment.WebRootPath, "content/images/thumbs");
-            if (_mediaSettings.MultipleThumbDirectories)
-            {
-                //get the first two letters of the file name
-                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(thumbFileName);
-                if (fileNameWithoutExtension != null && fileNameWithoutExtension.Length > MULTIPLE_THUMB_DIRECTORIES_LENGTH)
-                {
-                    var subDirectoryName = fileNameWithoutExtension.Substring(0, MULTIPLE_THUMB_DIRECTORIES_LENGTH);
-                    thumbsDirectoryPath = Path.Combine(thumbsDirectoryPath, subDirectoryName);
-                    if (!System.IO.Directory.Exists(thumbsDirectoryPath))
-                    {
-                        System.IO.Directory.CreateDirectory(thumbsDirectoryPath);
-                    }
-                }
-            }
-            var thumbFilePath = Path.Combine(thumbsDirectoryPath, thumbFileName);
-            return thumbFilePath;
+            var thumbFile = _mediaFileStore.Combine(CommonPath.ImageThumbPath, thumbFileName);
+            var fileInfo = await _mediaFileStore.GetFileInfo(thumbFile);
+            return fileInfo?.PhysicalPath;
         }
 
         /// <summary>
@@ -198,31 +175,18 @@ namespace ForeverNote.Services.Media
                                     _commonSettings.SslEnabled ? _commonSettings.SecureUrl : _commonSettings.Url :
                                     _mediaSettings.StoreLocation;
 
-            var url = storeLocation + "content/images/thumbs/";
-
-            if (_mediaSettings.MultipleThumbDirectories)
-            {
-                //get the first two letters of the file name
-                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(thumbFileName);
-                if (fileNameWithoutExtension != null && fileNameWithoutExtension.Length > MULTIPLE_THUMB_DIRECTORIES_LENGTH)
-                {
-                    var subDirectoryName = fileNameWithoutExtension.Substring(0, MULTIPLE_THUMB_DIRECTORIES_LENGTH);
-                    url = url + subDirectoryName + "/";
-                }
-            }
-
-            url = url + thumbFileName;
-            return url;
+            return _mediaFileStore.Combine(storeLocation, CommonPath.Param, CommonPath.ImageThumbPath, thumbFileName);
         }
 
         /// <summary>
-        /// Get picture local path. Used when images stored on file system (not in the database)
+        /// Get picture physical path. Used when images stored on file system (not in the database)
         /// </summary>
         /// <param name="fileName">Filename</param>
-        /// <returns>Local picture path</returns>
-        protected virtual string GetPictureLocalPath(string fileName)
+        /// <returns>Physical picture path</returns>
+        protected virtual async Task<string> GetPicturePhysicalPath(string fileName)
         {
-            return Path.Combine(_hostingEnvironment.WebRootPath, "content/images", fileName);
+            var fileInfo = await _mediaFileStore.GetFileInfo(_mediaFileStore.Combine(CommonPath.ImagePath, fileName));
+            return fileInfo?.PhysicalPath;
         }
 
         /// <summary>
@@ -234,37 +198,45 @@ namespace ForeverNote.Services.Media
         public virtual async Task<byte[]> LoadPictureBinary(Picture picture, bool fromDb)
         {
             if (picture == null)
-                throw new ArgumentNullException("picture");
+                throw new ArgumentNullException(nameof(picture));
 
             var result = fromDb
                 ? (await _pictureRepository.GetByIdAsync(picture.Id)).PictureBinary
-                : LoadPictureFromFile(picture.Id, picture.MimeType);
+                : await LoadPictureFromFile(picture.Id, picture.MimeType);
 
             return result;
-        }
-
-
-
-        /// <summary>
-        /// Get a value indicating whether some file (thumb) already exists
-        /// </summary>
-        /// <param name="thumbFilePath">Thumb file path</param>
-        /// <param name="thumbFileName">Thumb file name</param>
-        /// <returns>Result</returns>
-        protected virtual Task<bool> GeneratedThumbExists(string thumbFilePath, string thumbFileName)
-        {
-            return Task.FromResult(File.Exists(thumbFilePath));
         }
 
         /// <summary>
         /// Save a value indicating whether some file (thumb) already exists
         /// </summary>
-        /// <param name="thumbFilePath">Thumb file path</param>
         /// <param name="thumbFileName">Thumb file name</param>
         /// <param name="binary">Picture binary</param>
-        protected virtual Task SaveThumb(string thumbFilePath, string thumbFileName, byte[] binary)
+        protected virtual Task SaveThumb(string thumbFileName, byte[] binary)
         {
-            File.WriteAllBytes(thumbFilePath, binary ?? new byte[0]);
+            try
+            {
+                var dirThumb = _mediaFileStore.GetDirectoryInfo(CommonPath.ImageThumbPath);
+                if (dirThumb == null)
+                {
+                    var result = _mediaFileStore.TryCreateDirectory(CommonPath.ImageThumbPath);
+                    if (result)
+                        dirThumb = _mediaFileStore.GetDirectoryInfo(CommonPath.ImageThumbPath);
+                }
+
+                if (dirThumb != null)
+                {
+                    var file = _mediaFileStore.Combine(dirThumb.PhysicalPath, thumbFileName);
+                    File.WriteAllBytes(file, binary ?? Array.Empty<byte>());
+                }
+                else
+                    _logger.InsertLog(LogLevel.Error, "Directory thumb not exist.");
+
+            }
+            catch (Exception ex)
+            {
+                _logger.InsertLog(LogLevel.Error, ex.Message);
+            }
             return Task.CompletedTask;
         }
 
@@ -280,37 +252,33 @@ namespace ForeverNote.Services.Media
         /// <returns>Picture binary</returns>
         public virtual async Task<byte[]> LoadPictureBinary(Picture picture)
         {
-            return await LoadPictureBinary(picture, _mediaSettings.StoreInDb);
+            return await LoadPictureBinary(picture, _storageSettings.PictureStoreInDb);
+        }
+
+        /// <summary>
+        /// Get picture SEO friendly name
+        /// </summary>
+        /// <param name="name">Name</param>
+        /// <returns>Result</returns>
+        public virtual string GetPictureSeName(string name)
+        {
+            //TODO: Get rid of this, yeah?
+            ////return SeoExtensions.GenerateSlug(name, true, false, false);
+            return name;
         }
 
         /// <summary>
         /// Gets the default picture URL
         /// </summary>
         /// <param name="targetSize">The target picture size (longest side)</param>
-        /// <param name="defaultPictureType">Default picture type</param>
         /// <param name="storeLocation">Store location URL; null to use determine the current store location automatically</param>
         /// <returns>Picture URL</returns>
-        public virtual async Task<string> GetDefaultPictureUrl(int targetSize = 0,
-            PictureType defaultPictureType = PictureType.Entity,
-            string storeLocation = null)
+        public virtual async Task<string> GetDefaultPictureUrl(int targetSize = 0, string storeLocation = null)
         {
-            string defaultImageFileName;
-            switch (defaultPictureType)
+            var filePath = await GetPicturePhysicalPath(_mediaSettings.DefaultImageName);
+            if (string.IsNullOrEmpty(filePath))
             {
-                case PictureType.Avatar:
-                    defaultImageFileName = _settingService.GetSettingByKey("Media.User.DefaultAvatarImageName", "default-avatar.jpg");
-                    break;
-                case PictureType.Entity:
-                default:
-                    defaultImageFileName = _settingService.GetSettingByKey("Media.DefaultImageName", "default-image.png");
-                    break;
-            }
-
-            string filePath = GetPictureLocalPath(defaultImageFileName);
-
-            if (!File.Exists(filePath))
-            {
-                return "";
+                return _mediaFileStore.Combine(_mediaSettings.StoreLocation, CommonPath.ImagePath, "no-image.png");
             }
             if (targetSize == 0)
             {
@@ -318,35 +286,30 @@ namespace ForeverNote.Services.Media
                         ? storeLocation
                         : string.IsNullOrEmpty(_mediaSettings.StoreLocation) ?
                         _commonSettings.SslEnabled ? _commonSettings.SecureUrl : _commonSettings.Url :
-                        _mediaSettings.StoreLocation
-                        + "content/images/" + defaultImageFileName;
+                        _mediaFileStore.Combine(_mediaSettings.StoreLocation, CommonPath.ImagePath, _mediaSettings.DefaultImageName);
             }
-            else
+
+            var fileExtension = Path.GetExtension(filePath);
+            var thumbFileName = $"{Path.GetFileNameWithoutExtension(filePath)}_{targetSize}{fileExtension}";
+
+            var thumbFilePath = await GetThumbPhysicalPath(thumbFileName);
+
+            if (!string.IsNullOrEmpty(thumbFilePath))
+                return GetThumbUrl(thumbFileName, storeLocation);
+
+            using (var mutex = new Mutex(false, thumbFileName))
             {
-                string fileExtension = Path.GetExtension(filePath);
-                string thumbFileName = string.Format("{0}_{1}{2}",
-                    Path.GetFileNameWithoutExtension(filePath),
-                    targetSize,
-                    fileExtension);
-
-                var thumbFilePath = GetThumbLocalPath(thumbFileName);
-
-                if (await GeneratedThumbExists(thumbFilePath, thumbFileName))
-                    return GetThumbUrl(thumbFileName, storeLocation);
-
-                using (var mutex = new Mutex(false, thumbFileName))
+                mutex.WaitOne();
+                using (var image = SKBitmap.Decode(filePath))
                 {
-                    mutex.WaitOne();
-                    using (var image = SKBitmap.Decode(filePath))
-                    {
-                        var pictureBinary = ApplyResize(image, EncodedImageFormat(fileExtension), targetSize);
-                        await SaveThumb(thumbFilePath, thumbFileName, pictureBinary);
-                    }
-                    mutex.ReleaseMutex();
+                    var pictureBinary = ApplyResize(image, EncodedImageFormat(fileExtension), targetSize);
+                    if (pictureBinary != null)
+                        await SaveThumb(thumbFileName, pictureBinary);
                 }
-                var url = GetThumbUrl(thumbFileName, storeLocation);
-                return url;
+                mutex.ReleaseMutex();
             }
+            var url = GetThumbUrl(thumbFileName, storeLocation);
+            return url;
         }
 
         /// <summary>
@@ -356,19 +319,17 @@ namespace ForeverNote.Services.Media
         /// <param name="targetSize">The target picture size (longest side)</param>
         /// <param name="showDefaultPicture">A value indicating whether the default picture is shown</param>
         /// <param name="storeLocation">Store location URL; null to use determine the current store location automatically</param>
-        /// <param name="defaultPictureType">Default picture type</param>
         /// <returns>Picture URL</returns>
         public virtual async Task<string> GetPictureUrl(string pictureId,
             int targetSize = 0,
             bool showDefaultPicture = true,
-            string storeLocation = null,
-            PictureType defaultPictureType = PictureType.Entity)
+            string storeLocation = null)
         {
-            var pictureKey = string.Format(PICTURE_BY_KEY, pictureId, targetSize, showDefaultPicture, storeLocation, defaultPictureType);
-            return await _cacheManager.GetAsync(pictureKey, async () =>
+            var pictureKey = string.Format(CacheKey.PICTURE_BY_KEY, pictureId, targetSize, showDefaultPicture, storeLocation);
+            return await _cacheBase.GetAsync(pictureKey, async () =>
             {
                 var picture = await GetPictureById(pictureId);
-                return await GetPictureUrl(picture, targetSize, showDefaultPicture, storeLocation, defaultPictureType);
+                return await GetPictureUrl(picture, targetSize, showDefaultPicture, storeLocation);
             });
         }
 
@@ -379,114 +340,93 @@ namespace ForeverNote.Services.Media
         /// <param name="targetSize">The target picture size (longest side)</param>
         /// <param name="showDefaultPicture">A value indicating whether the default picture is shown</param>
         /// <param name="storeLocation">Store location URL; null to use determine the current store location automatically</param>
-        /// <param name="defaultPictureType">Default picture type</param>
         /// <returns>Picture URL</returns>
         public virtual async Task<string> GetPictureUrl(Picture picture,
             int targetSize = 0,
             bool showDefaultPicture = true,
-            string storeLocation = null,
-            PictureType defaultPictureType = PictureType.Entity)
+            string storeLocation = null)
         {
             if (picture == null)
-            {
-                return showDefaultPicture ? await GetDefaultPictureUrl(targetSize, defaultPictureType, storeLocation) : string.Empty;
-            }
-
-            byte[] pictureBinary = null;
+                return showDefaultPicture ? await GetDefaultPictureUrl(targetSize, storeLocation) : string.Empty;
 
             if (picture.IsNew)
             {
-                if ((picture.PictureBinary?.Length ?? 0) == 0)
-                    pictureBinary = await LoadPictureBinary(picture);
-                else
-                    pictureBinary = picture.PictureBinary;
-
                 await DeletePictureThumbs(picture);
 
-                //we do not validate picture binary here to ensure that no exception ("Parameter is not valid") will be thrown
-                picture = await UpdatePicture(picture.Id,
-                    pictureBinary,
-                    picture.MimeType,
-                    picture.SeoFilename,
-                    picture.AltAttribute,
-                    picture.TitleAttribute,
-                    false,
-                    false);
+                picture.IsNew = false;
+                await _pictureRepository.UpdateField(picture.Id, x => x.IsNew, picture.IsNew);                
             }
 
-            string seoFileName = picture.SeoFilename;
-            string lastPart = GetFileExtensionFromMimeType(picture.MimeType);
+            var seoFileName = picture.SeoFilename;
+            var lastPart = GetFileExtensionFromMimeType(picture.MimeType);
             string thumbFileName;
 
             if (targetSize == 0)
             {
-                thumbFileName = !string.IsNullOrEmpty(seoFileName) ?
-                    string.Format("{0}_{1}.{2}", picture.Id, seoFileName, lastPart) :
-                    string.Format("{0}.{1}", picture.Id, lastPart);
-                var thumbFilePath = GetThumbLocalPath(thumbFileName);
+                thumbFileName = !string.IsNullOrEmpty(seoFileName) ? $"{picture.Id}_{seoFileName}.{lastPart}"
+                    : $"{picture.Id}.{lastPart}";
 
-                if (await GeneratedThumbExists(thumbFilePath, thumbFileName))
+                var thumbFilePath = await GetThumbPhysicalPath(thumbFileName);
+
+                if (!string.IsNullOrEmpty(thumbFilePath))
                     return GetThumbUrl(thumbFileName, storeLocation);
 
-                pictureBinary = pictureBinary ?? await LoadPictureBinary(picture);
+                var pictureBinary = await LoadPictureBinary(picture);
 
-                using (var mutex = new Mutex(false, thumbFileName))
-                {
-                    mutex.WaitOne();
-
-                    await SaveThumb(thumbFilePath, thumbFileName, pictureBinary);
-
-                    mutex.ReleaseMutex();
-                }
+                using var mutex = new Mutex(false, thumbFileName);
+                mutex.WaitOne();
+                await SaveThumb(thumbFileName, pictureBinary);
+                mutex.ReleaseMutex();
             }
             else
             {
-                thumbFileName = !string.IsNullOrEmpty(seoFileName) ?
-                    string.Format("{0}_{1}_{2}.{3}", picture.Id, seoFileName, targetSize, lastPart) :
-                    string.Format("{0}_{1}.{2}", picture.Id, targetSize, lastPart);
-                var thumbFilePath = GetThumbLocalPath(thumbFileName);
+                thumbFileName = !string.IsNullOrEmpty(seoFileName) ? $"{picture.Id}_{seoFileName}_{targetSize}.{lastPart}"
+                    : $"{picture.Id}_{targetSize}.{lastPart}";
 
-                if (await GeneratedThumbExists(thumbFilePath, thumbFileName))
+                var thumbFilePath = await GetThumbPhysicalPath(thumbFileName);
+
+                if (!string.IsNullOrEmpty(thumbFilePath))
                     return GetThumbUrl(thumbFileName, storeLocation);
 
-                pictureBinary = pictureBinary ?? await LoadPictureBinary(picture);
+                var pictureBinary = await LoadPictureBinary(picture);
 
-                using (var mutex = new Mutex(false, thumbFileName))
+                using var mutex = new Mutex(false, thumbFileName);
+                mutex.WaitOne();
+                if (pictureBinary != null)
                 {
-                    mutex.WaitOne();
-                    if (pictureBinary != null)
+                    try
                     {
-                        try
-                        {
-                            using (var image = SKBitmap.Decode(pictureBinary))
-                            {
-                                pictureBinary = ApplyResize(image, EncodedImageFormat(picture.MimeType), targetSize);
-                            }
-                        }
-                        catch { }
+                        using var image = SKBitmap.Decode(pictureBinary);
+                        var resizedBinary = ApplyResize(image, EncodedImageFormat(picture.MimeType), targetSize);
+                        if (resizedBinary != null)
+                            pictureBinary = resizedBinary;
                     }
-                    await SaveThumb(thumbFilePath, thumbFileName, pictureBinary);
-
-                    mutex.ReleaseMutex();
+                    catch
+                    {
+                        // ignored
+                    }
                 }
+                await SaveThumb(thumbFileName, pictureBinary);
+
+                mutex.ReleaseMutex();
             }
             return GetThumbUrl(thumbFileName, storeLocation);
         }
 
         /// <summary>
-        /// Get a picture local path
+        /// Get a picture physical path
         /// </summary>
         /// <param name="picture">Picture instance</param>
         /// <param name="targetSize">The target picture size (longest side)</param>
         /// <param name="showDefaultPicture">A value indicating whether the default picture is shown</param>
         /// <returns></returns>
-        public virtual async Task<string> GetThumbLocalPath(Picture picture, int targetSize = 0, bool showDefaultPicture = true)
+        public virtual async Task<string> GetThumbPhysicalPath(Picture picture, int targetSize = 0, bool showDefaultPicture = true)
         {
-            string url = await GetPictureUrl(picture, targetSize, showDefaultPicture);
+            var url = await GetPictureUrl(picture, targetSize, showDefaultPicture);
             if (string.IsNullOrEmpty(url))
                 return string.Empty;
 
-            return GetThumbLocalPath(Path.GetFileName(url));
+            return await GetThumbPhysicalPath(Path.GetFileName(url));
         }
 
         #endregion
@@ -498,12 +438,29 @@ namespace ForeverNote.Services.Media
         /// </summary>
         /// <param name="pictureId">Picture identifier</param>
         /// <returns>Picture</returns>
-        public virtual Task<Picture> GetPictureById(string pictureId)
+        public virtual async Task<Picture> GetPictureById(string pictureId)
         {
-            var query = _pictureRepository.Table
-                .Where(p => p.Id == pictureId)
-                .Select(p => new Picture { Id = p.Id, AltAttribute = p.AltAttribute, IsNew = p.IsNew, MimeType = p.MimeType, SeoFilename = p.SeoFilename, TitleAttribute = p.TitleAttribute });
-            return query.FirstOrDefaultAsync();
+            var pictureKey = string.Format(CacheKey.PICTURE_BY_ID, pictureId);
+            return await _cacheBase.GetAsync(pictureKey, async () =>
+            {
+                var query = _pictureRepository.Table
+                    .Where(p => p.Id == pictureId)
+                    .Select(p =>
+                        new Picture {
+                            Id = p.Id,
+                            AltAttribute = p.AltAttribute,
+                            IsNew = p.IsNew,
+                            MimeType = p.MimeType,
+                            SeoFilename = p.SeoFilename,
+                            TitleAttribute = p.TitleAttribute,
+                            Reference = p.Reference,
+                            ObjectId = p.ObjectId,
+                            ////Locales = p.Locales,
+                            Style = p.Style,
+                            ExtraField = p.ExtraField
+                        });
+                return await Task.FromResult(query.FirstOrDefault());
+            });
         }
 
         /// <summary>
@@ -513,14 +470,14 @@ namespace ForeverNote.Services.Media
         public virtual async Task DeletePicture(Picture picture)
         {
             if (picture == null)
-                throw new ArgumentNullException("picture");
+                throw new ArgumentNullException(nameof(picture));
 
             //delete thumbs
             await DeletePictureThumbs(picture);
 
             //delete from file system
-            if (!_mediaSettings.StoreInDb)
-                DeletePictureOnFileSystem(picture);
+            if (!_storageSettings.PictureStoreInDb)
+                await DeletePictureOnFileSystem(picture);
 
             //delete from database
             await _pictureRepository.DeleteAsync(picture);
@@ -533,38 +490,35 @@ namespace ForeverNote.Services.Media
         /// Delete a picture on file system
         /// </summary>
         /// <param name="picture">Picture</param>
-        public virtual void DeletePictureOnFileSystem(Picture picture)
+        public virtual async Task DeletePictureOnFileSystem(Picture picture)
         {
             if (picture == null)
-                throw new ArgumentNullException("picture");
+                throw new ArgumentNullException(nameof(picture));
 
             var lastPart = GetFileExtensionFromMimeType(picture.MimeType);
-            var fileName = string.Format("{0}_0.{1}", picture.Id, lastPart);
-            var filePath = GetPictureLocalPath(fileName);
-            if (File.Exists(filePath))
+            var fileName = $"{picture.Id}_0.{lastPart}";
+            var filePath = await GetPicturePhysicalPath(fileName);
+            if (!string.IsNullOrEmpty(filePath))
             {
                 File.Delete(filePath);
             }
         }
 
-        /// <summary>
-        /// Clears only physical Picture files located at ~/wwwroot/content/images/thumbs/, it won't affect Pictures stored in database
-        /// </summary>
         public virtual async Task ClearThumbs()
         {
             const string searchPattern = "*.*";
-            string path = Path.Combine(_hostingEnvironment.WebRootPath, "content/images/thumbs");
+            var path = _mediaFileStore.GetDirectoryInfo(CommonPath.ImageThumbPath)?.PhysicalPath;
 
             if (!System.IO.Directory.Exists(path))
                 return;
 
-            foreach (string str in System.IO.Directory.GetFiles(path, searchPattern, SearchOption.AllDirectories))
+            foreach (var file in System.IO.Directory.GetFiles(path, searchPattern, SearchOption.AllDirectories))
             {
-                if (str.Contains("placeholder.txt"))
+                if (file.Contains("placeholder.txt"))
                     continue;
                 try
                 {
-                    File.Delete(this.GetThumbLocalPath(str));
+                    File.Delete(file);
                 }
                 catch (Exception ex)
                 {
@@ -583,7 +537,6 @@ namespace ForeverNote.Services.Media
         public virtual IPagedList<Picture> GetPictures(int pageIndex = 0, int pageSize = int.MaxValue)
         {
             var query = from p in _pictureRepository.Table
-                        orderby p.Id descending
                         select p;
             var pictures = new PagedList<Picture>(query, pageIndex, pageSize);
             return pictures;
@@ -598,32 +551,36 @@ namespace ForeverNote.Services.Media
         /// <param name="altAttribute">"alt" attribute for "img" HTML element</param>
         /// <param name="titleAttribute">"title" attribute for "img" HTML element</param>
         /// <param name="isNew">A value indicating whether the picture is new</param>
+        /// <param name="reference">Reference type</param>
+        /// <param name="objectId">Object id for reference</param>
         /// <param name="validateBinary">A value indicating whether to validated provided picture binary</param>
         /// <returns>Picture</returns>
         public virtual async Task<Picture> InsertPicture(byte[] pictureBinary, string mimeType, string seoFilename,
             string altAttribute = null, string titleAttribute = null,
-            bool isNew = true, bool validateBinary = false)
+            bool isNew = true, Reference reference = Reference.None, string objectId = "", bool validateBinary = false)
         {
-            mimeType = CommonHelper.EnsureNotNull(mimeType);
-            mimeType = CommonHelper.EnsureMaximumLength(mimeType, 20);
+            mimeType = Core.CommonHelper.EnsureNotNull(mimeType);
+            mimeType = Core.CommonHelper.EnsureMaximumLength(mimeType, 20);
 
-            seoFilename = CommonHelper.EnsureMaximumLength(seoFilename, 100);
+            seoFilename = Core.CommonHelper.EnsureMaximumLength(seoFilename, 100);
 
             if (validateBinary)
                 pictureBinary = ValidatePicture(pictureBinary, mimeType);
 
             var picture = new Picture {
-                PictureBinary = _mediaSettings.StoreInDb ? pictureBinary : new byte[0],
+                PictureBinary = _storageSettings.PictureStoreInDb ? pictureBinary : Array.Empty<byte>(),
                 MimeType = mimeType,
                 SeoFilename = seoFilename,
                 AltAttribute = altAttribute,
                 TitleAttribute = titleAttribute,
+                Reference = reference,
+                ObjectId = objectId,
                 IsNew = isNew,
             };
             await _pictureRepository.InsertAsync(picture);
 
-            if (!_mediaSettings.StoreInDb)
-                SavePictureInFile(picture.Id, pictureBinary, mimeType);
+            if (!_storageSettings.PictureStoreInDb)
+                await SavePictureInFile(picture.Id, pictureBinary, mimeType);
 
             //event notification
             await _mediator.EntityInserted(picture);
@@ -640,19 +597,22 @@ namespace ForeverNote.Services.Media
         /// <param name="seoFilename">The SEO filename</param>
         /// <param name="altAttribute">"alt" attribute for "img" HTML element</param>
         /// <param name="titleAttribute">"title" attribute for "img" HTML element</param>
+        /// <param name="style">style attribute for "img" HTML element</param>
+        /// <param name="extraField">Extra field</param>
         /// <param name="isNew">A value indicating whether the picture is new</param>
         /// <param name="validateBinary">A value indicating whether to validated provided picture binary</param>
         /// <returns>Picture</returns>
         public virtual async Task<Picture> UpdatePicture(string pictureId, byte[] pictureBinary, string mimeType,
             string seoFilename, string altAttribute = null, string titleAttribute = null,
+            string style = null, string extraField = null,
             bool isNew = true, bool validateBinary = true)
         {
-            mimeType = CommonHelper.EnsureNotNull(mimeType);
-            mimeType = CommonHelper.EnsureMaximumLength(mimeType, 20);
+            mimeType = Core.CommonHelper.EnsureNotNull(mimeType);
+            mimeType = Core.CommonHelper.EnsureMaximumLength(mimeType, 20);
 
-            seoFilename = CommonHelper.EnsureMaximumLength(seoFilename, 100);
+            seoFilename = Core.CommonHelper.EnsureMaximumLength(seoFilename, 100);
 
-            if (validateBinary)
+            if (validateBinary && pictureBinary != null)
                 pictureBinary = ValidatePicture(pictureBinary, mimeType);
 
             var picture = await GetPictureById(pictureId);
@@ -660,25 +620,89 @@ namespace ForeverNote.Services.Media
                 return null;
 
             //delete old thumbs if a picture has been changed
-            if (seoFilename != picture.SeoFilename)
+            if (seoFilename != picture.SeoFilename || pictureBinary != null)
                 await DeletePictureThumbs(picture);
 
-            picture.PictureBinary = _mediaSettings.StoreInDb ? pictureBinary : new byte[0];
+            if (pictureBinary != null)
+            {
+                picture.PictureBinary = _storageSettings.PictureStoreInDb ? pictureBinary : Array.Empty<byte>();
+                await _pictureRepository.UpdateField(picture.Id, x => x.PictureBinary, picture.PictureBinary);
+            }
+
             picture.MimeType = mimeType;
+            await _pictureRepository.UpdateField(picture.Id, x => x.MimeType, picture.MimeType);
+
             picture.SeoFilename = seoFilename;
+            await _pictureRepository.UpdateField(picture.Id, x => x.SeoFilename, picture.SeoFilename);
+
             picture.AltAttribute = altAttribute;
+            await _pictureRepository.UpdateField(picture.Id, x => x.AltAttribute, picture.AltAttribute);
+
             picture.TitleAttribute = titleAttribute;
+            await _pictureRepository.UpdateField(picture.Id, x => x.TitleAttribute, picture.TitleAttribute);
+
+            picture.Style = style;
+            await _pictureRepository.UpdateField(picture.Id, x => x.Style, picture.Style);
+
+            picture.ExtraField = extraField;
+            await _pictureRepository.UpdateField(picture.Id, x => x.ExtraField, picture.ExtraField);
+
             picture.IsNew = isNew;
+            await _pictureRepository.UpdateField(picture.Id, x => x.IsNew, picture.IsNew);
 
-            await _pictureRepository.UpdateAsync(picture);
-
-            if (!_mediaSettings.StoreInDb)
-                SavePictureInFile(picture.Id, pictureBinary, mimeType);
+            if (!_storageSettings.PictureStoreInDb && pictureBinary != null)
+                await SavePictureInFile(picture.Id, pictureBinary, mimeType);
 
             //event notification
             await _mediator.EntityUpdated(picture);
 
+            //clare cache
+            await _cacheBase.RemoveByPrefix(string.Format(CacheKey.PICTURE_BY_ID, picture.Id));
+
             return picture;
+        }
+
+        /// <summary>
+        /// Updates the picture
+        /// </summary>
+        /// <param name="picture">Picture</param>
+        /// <returns>Picture</returns>
+        public virtual async Task<Picture> UpdatePicture(Picture picture)
+        {
+            if (picture == null)
+                throw new ArgumentNullException(nameof(picture));
+
+            await _pictureRepository.UpdateAsync(picture);
+
+            //event notification
+            await _mediator.EntityUpdated(picture);
+
+            //clare cache
+            await _cacheBase.RemoveByPrefix(string.Format(CacheKey.PICTURE_BY_ID, picture.Id));
+
+            return picture;
+        }
+
+        /// <summary>
+        /// Updates the picture
+        /// </summary>
+        /// <param name="picture">Picture</param>
+        /// <param name="expression"></param>
+        /// <param name="value"></param>
+        /// <returns>Picture</returns>
+        public virtual async Task UpdatePictureField<T>(Picture picture, Expression<Func<Picture, T>> expression, T value)
+        {
+            if (picture == null)
+                throw new ArgumentNullException(nameof(picture));
+
+            await _pictureRepository.UpdateField(picture.Id, expression, value);
+
+            //event notification
+            await _mediator.EntityUpdated(picture);
+
+            //clare cache
+            await _cacheBase.RemoveByPrefix(string.Format(CacheKey.PICTURE_BY_ID, picture.Id));
+
         }
 
         /// <summary>
@@ -687,45 +711,51 @@ namespace ForeverNote.Services.Media
         /// <param name="pictureId">Picture identifier</param>
         /// <param name="pictureBinary">Picture binary</param>
         /// <param name="mimeType">MIME type</param>
-        public virtual void SavePictureInFile(string pictureId, byte[] pictureBinary, string mimeType)
+        public virtual Task SavePictureInFile(string pictureId, byte[] pictureBinary, string mimeType)
         {
             var lastPart = GetFileExtensionFromMimeType(mimeType);
-            var fileName = string.Format("{0}_0.{1}", pictureId, lastPart);
-            File.WriteAllBytes(GetPictureLocalPath(fileName), pictureBinary);
+            var fileName = $"{pictureId}_0.{lastPart}";
+            var dirPath = _mediaFileStore.GetDirectoryInfo(CommonPath.ImagePath);
+            if (dirPath != null)
+            {
+                var filepath = _mediaFileStore.Combine(dirPath.PhysicalPath, fileName);
+                File.WriteAllBytes(filepath, pictureBinary);
+            }
+            else
+                _logger.Error("Directory path not exist.");
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
         /// Updates a SEO filename of a picture
         /// </summary>
-        /// <param name="pictureId">The picture identifier</param>
+        /// <param name="picture">The picture</param>
         /// <param name="seoFilename">The SEO filename</param>
         /// <returns>Picture</returns>
-        public virtual async Task<Picture> SetSeoFilename(string pictureId, string seoFilename)
+        public virtual async Task<Picture> SetSeoFilename(Picture picture, string seoFilename)
         {
-            var picture = await GetPictureById(pictureId);
             if (picture == null)
                 throw new ArgumentException("No picture found with the specified id");
 
             //update if it has been changed
-            if (seoFilename != picture.SeoFilename)
-            {
-                //update picture
-                picture = await UpdatePicture(picture.Id,
-                    await LoadPictureBinary(picture),
-                    picture.MimeType,
-                    seoFilename,
-                    picture.AltAttribute,
-                    picture.TitleAttribute,
-                    true,
-                    false);
-            }
+            if (seoFilename == picture.SeoFilename) return picture;
+            //update SeoFilename picture
+            picture.SeoFilename = seoFilename;
+            await UpdatePictureField(picture, p => p.SeoFilename, seoFilename);
+
+            //event notification
+            await _mediator.EntityUpdated(picture);
+
+            //clare cache
+            await _cacheBase.RemoveByPrefix(string.Format(CacheKey.PICTURE_BY_ID, picture.Id));
             return picture;
         }
 
         /// <summary>
         /// Validates input picture dimensions
         /// </summary>
-        /// <param name="pictureBinary">Picture binary</param>
+        /// <param name="byteArray">Picture binary</param>
         /// <param name="mimeType">MIME type</param>
         /// <returns>Picture binary or throws an exception</returns>
         public virtual byte[] ValidatePicture(byte[] byteArray, string mimeType)
@@ -733,21 +763,27 @@ namespace ForeverNote.Services.Media
             try
             {
                 var format = EncodedImageFormat(mimeType);
-                using (var ms = new MemoryStream(byteArray))
+                using (new MemoryStream(byteArray))
                 {
                     using (var image = SKBitmap.Decode(byteArray))
                     {
                         if (image.Width >= image.Height)
                         {
                             //horizontal rectangle or square
-                            if (image.Width > _mediaSettings.MaximumImageSize && image.Height > _mediaSettings.MaximumImageSize)
-                                byteArray = ApplyResize(image, format, _mediaSettings.MaximumImageSize);
+                            if (image.Width <= _mediaSettings.MaximumImageSize ||
+                                image.Height <= _mediaSettings.MaximumImageSize) return byteArray;
+                            var resizedPicture = ApplyResize(image, format, _mediaSettings.MaximumImageSize);
+                            if (resizedPicture != null)
+                                byteArray = resizedPicture;
                         }
                         else if (image.Width < image.Height)
                         {
                             //vertical rectangle
-                            if (image.Width > _mediaSettings.MaximumImageSize)
-                                byteArray = ApplyResize(image, format, _mediaSettings.MaximumImageSize);
+                            if (image.Width <= _mediaSettings.MaximumImageSize) return byteArray;
+                            var resizedPicture = ApplyResize(image, format, _mediaSettings.MaximumImageSize);
+                            if (resizedPicture != null)
+                                byteArray = resizedPicture;
+
                         }
                         return byteArray;
                     }
@@ -758,15 +794,42 @@ namespace ForeverNote.Services.Media
                 return byteArray;
             }
         }
-        protected SKEncodedImageFormat EncodedImageFormat(string mimetype)
+
+
+
+        /// <summary>
+        /// Convert picture
+        /// </summary>
+        /// <param name="pictureBinary">Picture binary</param>
+        /// <param name="imageQuality">Image quality</param>
+        /// <param name="format">Format</param>
+        /// <returns>Picture binary or throws an exception</returns>
+        public virtual byte[] ConvertPicture(byte[] pictureBinary, int imageQuality, string format = "Webp")
         {
-            SKEncodedImageFormat defaultFormat = SKEncodedImageFormat.Jpeg;
+            Enum.TryParse(typeof(SKEncodedImageFormat), format, out var skFormat);
+            skFormat ??= SKEncodedImageFormat.Webp;
+
+            using var image = SKBitmap.Decode(pictureBinary);
+            SKData d = SKImage.FromBitmap(image).Encode((SKEncodedImageFormat)skFormat, imageQuality);
+            return d.ToArray();
+        }
+
+
+        private SKEncodedImageFormat EncodedImageFormat(string mimetype)
+        {
+            const SKEncodedImageFormat defaultFormat = SKEncodedImageFormat.Jpeg;
             if (string.IsNullOrEmpty(mimetype))
                 return defaultFormat;
 
             mimetype = mimetype.ToLower();
 
-            if (mimetype.Contains("jpeg") || mimetype.Contains("jpg") || mimetype.Contains("pjpeg"))
+            if (mimetype.Contains("jpeg"))
+                return defaultFormat;
+            
+            if (mimetype.Contains("jpg"))
+                return defaultFormat;
+            
+            if (mimetype.Contains("pjpeg"))
                 return defaultFormat;
 
             if (mimetype.Contains("png"))
@@ -775,8 +838,8 @@ namespace ForeverNote.Services.Media
             if (mimetype.Contains("webp"))
                 return SKEncodedImageFormat.Webp;
 
-            if (mimetype.Contains("webp"))
-                return SKEncodedImageFormat.Webp;
+            if (mimetype.Contains("wbmp"))
+                return SKEncodedImageFormat.Wbmp;
 
             if (mimetype.Contains("gif"))
                 return SKEncodedImageFormat.Gif;
@@ -785,16 +848,13 @@ namespace ForeverNote.Services.Media
             if (mimetype.Contains("bmp"))
                 return SKEncodedImageFormat.Png;
 
-            if (mimetype.Contains("ico"))
-                return SKEncodedImageFormat.Ico;
-
-            return defaultFormat;
-
+            return mimetype.Contains("ico") ? SKEncodedImageFormat.Ico : defaultFormat;
         }
-        protected byte[] ApplyResize(SKBitmap image, SKEncodedImageFormat format, int targetSize)
+
+        private byte[] ApplyResize(SKBitmap image, SKEncodedImageFormat format, int targetSize)
         {
             if (image == null)
-                throw new ArgumentNullException("image");
+                throw new ArgumentNullException(nameof(image));
 
             if (targetSize <= 0)
             {
@@ -819,20 +879,20 @@ namespace ForeverNote.Services.Media
                 width = image.Width;
                 height = image.Height;
             }
+
             try
             {
-                using (var resized = image.Resize(new SKImageInfo((int)width, (int)height), SKFilterQuality.Medium))
-                {
-                    using (var resimage = SKImage.FromBitmap(resized))
-                    {
-                        return resimage.Encode(format, _mediaSettings.DefaultImageQuality).ToArray();
-                    }
-                }
+                using var resized = image.Resize(new SKImageInfo((int)width, (int)height), SKFilterQuality.High);
+                using var resImage = SKImage.FromBitmap(resized);
+                var skData = resImage.Encode(format, _mediaSettings.ImageQuality);
+                return skData?.ToArray();
             }
-            catch
+            catch (Exception ex)
             {
-                return image.Bytes;
+                _logger.Error($"ApplyResize - format {format}", ex);
+                return null;
             }
+
 
         }
 

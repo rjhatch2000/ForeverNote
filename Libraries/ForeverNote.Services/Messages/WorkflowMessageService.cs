@@ -1,13 +1,12 @@
 ﻿using ForeverNote.Core;
 using ForeverNote.Core.Domain.Common;
-using ForeverNote.Core.Domain.Users;
 using ForeverNote.Core.Domain.Localization;
 using ForeverNote.Core.Domain.Messages;
 using ForeverNote.Core.Domain.Notes;
-using ForeverNote.Services.Commands.Models.Common;
-using ForeverNote.Services.Users;
+using ForeverNote.Core.Domain.Users;
 using ForeverNote.Services.Localization;
 using ForeverNote.Services.Messages.DotLiquidDrops;
+using ForeverNote.Services.Users;
 using MediatR;
 using System;
 using System.Collections.Generic;

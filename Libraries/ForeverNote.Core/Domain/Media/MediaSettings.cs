@@ -33,5 +33,7 @@ namespace ForeverNote.Core.Domain.Media
         /// Gets a value indicating whether the images should be stored in data base.
         /// </summary>
         public bool StoreInDb { get; set; } = true;
+        public string DefaultImageName { get; set; }
+        public int ImageQuality { get; set; }
     }
 }

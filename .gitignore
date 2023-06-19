@@ -3,3 +3,5 @@ _old/
 bin/
 obj/
 Presentation/ForeverNote.GN.Web/App_Data/DataProtectionKeys/
+/Presentation/ForeverNote.API/ForeverNote.API.csproj.user
+/.gitignore

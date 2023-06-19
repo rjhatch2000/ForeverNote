@@ -14,6 +14,6 @@ namespace ForeverNote.Core
         }
 
         public IList<GenericAttribute> GenericAttributes { get; set; }
-        
+
     }
 }

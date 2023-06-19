@@ -1,4 +1,5 @@
-﻿using ForeverNote.Core.Domain.Logging;
+﻿using ForeverNote.Core.Data.Mongo;
+using ForeverNote.Core.Domain.Logging;
 using ForeverNote.Core.Domain.Media;
 using ForeverNote.Core.Domain.Messages;
 using ForeverNote.Core.Domain.Notes;

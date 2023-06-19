@@ -15,13 +15,13 @@ namespace ForeverNote.Services.Users
     public partial class UserAttributeParser : IUserAttributeParser
     {
         private readonly IUserAttributeService _userAttributeService;
-        private readonly ILocalizationService _localizationService;
+        private readonly ITranslationService _translationService;
 
         public UserAttributeParser(IUserAttributeService userAttributeService,
-            ILocalizationService localizationService)
+            ITranslationService localizationService)
         {
             this._userAttributeService = userAttributeService;
-            this._localizationService = localizationService;
+            this._translationService = localizationService;
         }
 
         /// <summary>
@@ -252,9 +252,10 @@ namespace ForeverNote.Services.Users
                     //if not found
                     if (!found)
                     {
-                        var notFoundWarning = string.Format(_localizationService.GetResource("ShoppingCart.SelectAttribute"), a2.GetLocalized(a => a.Name, ""));
+                        ////var notFoundWarning = string.Format(_translationService.GetResource("ShoppingCart.SelectAttribute"), a2.GetLocalized(a => a.Name, ""));
 
-                        warnings.Add(notFoundWarning);
+                        ////warnings.Add(notFoundWarning);
+                        warnings.Add("Something wasn't found, but good luck finding it. UserAttributeParser.258");
                     }
                 }
             }

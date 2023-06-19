@@ -1,8 +1,8 @@
 namespace ForeverNote.Core
 {
 
-    public abstract partial class SubBaseEntity: ParentEntity
+    public abstract partial class SubBaseEntity : ParentEntity
     {
-        
+
     }
 }

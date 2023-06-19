@@ -38,7 +38,7 @@ namespace ForeverNote.Services.Common
             if (entity == null)
                 throw new ArgumentNullException("entity");
 
-            var history = await _historyRepository.Table.Where(x => x.Object.Id == entity.Id).Select(x => (T)x.Object).ToListAsync();
+            var history = _historyRepository.Table.Where(x => x.Object.Id == entity.Id).Select(x => (T)x.Object).ToList();
             return history;
         }
 
@@ -47,7 +47,7 @@ namespace ForeverNote.Services.Common
             if (entity == null)
                 throw new ArgumentNullException("entity");
 
-            var history = await _historyRepository.Table.Where(x => x.Object.Id == entity.Id).ToListAsync();
+            var history = _historyRepository.Table.Where(x => x.Object.Id == entity.Id).ToList();
             return history;
         }
     }

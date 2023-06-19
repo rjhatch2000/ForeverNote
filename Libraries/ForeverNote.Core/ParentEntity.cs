@@ -1,4 +1,5 @@
-using MongoDB.Bson;
+using ForeverNote.Core.Attributes;
+using ForeverNote.Core.Data;
 using System;
 
 namespace ForeverNote.Core
@@ -7,16 +8,17 @@ namespace ForeverNote.Core
     {
         protected ParentEntity()
         {
-            _id = ObjectId.GenerateNewId().ToString();
+            _id = UniqueIdentifier.New;
         }
 
+        [DBFieldName("_id")]
         public string Id
         {
             get { return _id; }
             set
             {
                 if (string.IsNullOrEmpty(value))
-                    _id = ObjectId.GenerateNewId().ToString();
+                    _id = UniqueIdentifier.New;
                 else
                     _id = value;
             }
@@ -24,14 +26,8 @@ namespace ForeverNote.Core
 
         private string _id;
 
-        /// <summary>
-        /// Gets or sets the date and time of instance creation
-        /// </summary>
-        public DateTime CreatedOnUtc { get; set; }
 
-        /// <summary>
-        /// Gets or sets the date and time of instance updated
-        /// </summary>
+        public DateTime CreatedOnUtc { get; set; }
         public DateTime UpdatedOnUtc { get; set; }
     }
 }

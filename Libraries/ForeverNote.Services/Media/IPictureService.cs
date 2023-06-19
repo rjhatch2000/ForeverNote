@@ -1,5 +1,8 @@
 using ForeverNote.Core;
+using ForeverNote.Core.Domain.Common;
 using ForeverNote.Core.Domain.Media;
+using System;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace ForeverNote.Services.Media
@@ -7,7 +10,7 @@ namespace ForeverNote.Services.Media
     /// <summary>
     /// Picture service interface
     /// </summary>
-    public partial interface IPictureService
+    public interface IPictureService
     {
         /// <summary>
         /// Gets the loaded picture binary depending on picture storage settings
@@ -25,15 +28,19 @@ namespace ForeverNote.Services.Media
         Task<byte[]> LoadPictureBinary(Picture picture, bool fromDb);
 
         /// <summary>
+        /// Get picture SEO friendly name
+        /// </summary>
+        /// <param name="name">Name</param>
+        /// <returns>Result</returns>
+        string GetPictureSeName(string name);
+
+        /// <summary>
         /// Gets the default picture URL
         /// </summary>
         /// <param name="targetSize">The target picture size (longest side)</param>
-        /// <param name="defaultPictureType">Default picture type</param>
         /// <param name="storeLocation">Store location URL; null to use determine the current store location automatically</param>
         /// <returns>Picture URL</returns>
-        Task<string> GetDefaultPictureUrl(int targetSize = 0, 
-            PictureType defaultPictureType = PictureType.Entity,
-            string storeLocation = null);
+        Task<string> GetDefaultPictureUrl(int targetSize = 0, string storeLocation = null);
 
         /// <summary>
         /// Get a picture URL
@@ -42,13 +49,11 @@ namespace ForeverNote.Services.Media
         /// <param name="targetSize">The target picture size (longest side)</param>
         /// <param name="showDefaultPicture">A value indicating whether the default picture is shown</param>
         /// <param name="storeLocation">Store location URL; null to use determine the current store location automatically</param>
-        /// <param name="defaultPictureType">Default picture type</param>
         /// <returns>Picture URL</returns>
         Task<string> GetPictureUrl(string pictureId,
             int targetSize = 0,
-            bool showDefaultPicture = true, 
-            string storeLocation = null, 
-            PictureType defaultPictureType = PictureType.Entity);
+            bool showDefaultPicture = true,
+            string storeLocation = null);
 
         /// <summary>
         /// Get a picture URL
@@ -57,13 +62,11 @@ namespace ForeverNote.Services.Media
         /// <param name="targetSize">The target picture size (longest side)</param>
         /// <param name="showDefaultPicture">A value indicating whether the default picture is shown</param>
         /// <param name="storeLocation">Store location URL; null to use determine the current store location automatically</param>
-        /// <param name="defaultPictureType">Default picture type</param>
         /// <returns>Picture URL</returns>
         Task<string> GetPictureUrl(Picture picture,
             int targetSize = 0,
-            bool showDefaultPicture = true, 
-            string storeLocation = null, 
-            PictureType defaultPictureType = PictureType.Entity);
+            bool showDefaultPicture = true,
+            string storeLocation = null);
 
         /// <summary>
         /// Get a picture local path
@@ -72,7 +75,7 @@ namespace ForeverNote.Services.Media
         /// <param name="targetSize">The target picture size (longest side)</param>
         /// <param name="showDefaultPicture">A value indicating whether the default picture is shown</param>
         /// <returns></returns>
-        Task<string> GetThumbLocalPath(Picture picture, int targetSize = 0, bool showDefaultPicture = true);
+        Task<string> GetThumbPhysicalPath(Picture picture, int targetSize = 0, bool showDefaultPicture = true);
 
         /// <summary>
         /// Gets a picture
@@ -91,7 +94,7 @@ namespace ForeverNote.Services.Media
         /// Deletes a picture on file system
         /// </summary>
         /// <param name="picture">Picture</param>
-        void DeletePictureOnFileSystem(Picture picture);
+        Task DeletePictureOnFileSystem(Picture picture);
 
         /// <summary>
         /// Save picture on file system
@@ -99,10 +102,10 @@ namespace ForeverNote.Services.Media
         /// <param name="pictureId">Picture identifier</param>
         /// <param name="pictureBinary">Picture binary</param>
         /// <param name="mimeType">MIME type</param>
-        void SavePictureInFile(string pictureId, byte[] pictureBinary, string mimeType);
+        Task SavePictureInFile(string pictureId, byte[] pictureBinary, string mimeType);
 
         /// <summary>
-        /// Clear Pictures stored in Content/Images/Thumbs 
+        /// Clear Pictures stored in Assets/Images/Thumbs 
         /// </summary>
         Task ClearThumbs();
 
@@ -123,11 +126,13 @@ namespace ForeverNote.Services.Media
         /// <param name="altAttribute">"alt" attribute for "img" HTML element</param>
         /// <param name="titleAttribute">"title" attribute for "img" HTML element</param>
         /// <param name="isNew">A value indicating whether the picture is new</param>
+        /// <param name="reference">Reference type</param>
+        /// <param name="objectId">Object id for reference</param>
         /// <param name="validateBinary">A value indicating whether to validated provided picture binary</param>
         /// <returns>Picture</returns>
-        Task<Picture> InsertPicture(byte[] pictureBinary, string mimeType, string seoFilename, 
+        Task<Picture> InsertPicture(byte[] pictureBinary, string mimeType, string seoFilename,
             string altAttribute = null, string titleAttribute = null,
-            bool isNew = true, bool validateBinary = false);
+            bool isNew = true, Reference reference = Reference.None, string objectId = "", bool validateBinary = false);
 
         /// <summary>
         /// Updates the picture
@@ -138,20 +143,39 @@ namespace ForeverNote.Services.Media
         /// <param name="seoFilename">The SEO filename</param>
         /// <param name="altAttribute">"alt" attribute for "img" HTML element</param>
         /// <param name="titleAttribute">"title" attribute for "img" HTML element</param>
+        /// <param name="style">style attribute for "img" HTML element</param>
+        /// <param name="extraField">Extra field</param>
         /// <param name="isNew">A value indicating whether the picture is new</param>
         /// <param name="validateBinary">A value indicating whether to validated provided picture binary</param>
         /// <returns>Picture</returns>
         Task<Picture> UpdatePicture(string pictureId, byte[] pictureBinary, string mimeType,
             string seoFilename, string altAttribute = null, string titleAttribute = null,
+            string style = null, string extraField = null,
             bool isNew = true, bool validateBinary = true);
+
+        /// <summary>
+        /// Updates the picture
+        /// </summary>
+        /// <param name="picture">Picture</param>
+        /// <returns>Picture</returns>
+        Task<Picture> UpdatePicture(Picture picture);
+
+        /// <summary>
+        /// Updates the picture field
+        /// </summary>
+        /// <param name="picture">Picture</param>
+        /// <param name="expression"></param>
+        /// <param name="value"></param>
+        Task UpdatePictureField<T>(Picture picture,
+            Expression<Func<Picture, T>> expression, T value);
 
         /// <summary>
         /// Updates a SEO filename of a picture
         /// </summary>
-        /// <param name="pictureId">The picture identifier</param>
+        /// <param name="picture">The picture</param>
         /// <param name="seoFilename">The SEO filename</param>
         /// <returns>Picture</returns>
-        Task<Picture> SetSeoFilename(string pictureId, string seoFilename);
+        Task<Picture> SetSeoFilename(Picture picture, string seoFilename);
 
         /// <summary>
         /// Validates input picture dimensions
@@ -161,5 +185,13 @@ namespace ForeverNote.Services.Media
         /// <returns>Picture binary or throws an exception</returns>
         byte[] ValidatePicture(byte[] pictureBinary, string mimeType);
 
+        /// <summary>
+        /// Convert picture
+        /// </summary>
+        /// <param name="pictureBinary">Picture binary</param>
+        /// <param name="imageQuality">Image quality</param>
+        /// <param name="format">Format</param>
+        /// <returns>Picture binary or throws an exception</returns>
+        byte[] ConvertPicture(byte[] pictureBinary, int imageQuality, string format = "Webp");
     }
 }

@@ -2,7 +2,6 @@ using ForeverNote.Core.Configuration;
 using ForeverNote.Core.Domain.Configuration;
 using System;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace ForeverNote.Services.Configuration
@@ -10,21 +9,23 @@ namespace ForeverNote.Services.Configuration
     /// <summary>
     /// Setting service interface
     /// </summary>
-    public partial interface ISettingService
+    public interface ISettingService
     {
-        /// <summary>
-        /// Gets a setting by identifier
-        /// </summary>
-        /// <param name="settingId">Setting identifier</param>
-        /// <returns>Setting</returns>
-        Setting GetSettingById(string settingId);
 
         /// <summary>
-        /// Gets a setting by identifier
+        /// Adds a setting
         /// </summary>
-        /// <param name="settingId">Setting identifier</param>
-        /// <returns>Setting</returns>
-        Task<Setting> GetSettingByIdAsync(string settingId);
+        /// <param name="setting">Setting</param>
+        /// <param name="clearCache">A value indicating whether to clear cache after setting update</param>
+        Task InsertSetting(Setting setting, bool clearCache = true);
+
+        /// <summary>
+        /// Update setting
+        /// </summary>
+        /// <param name="setting"></param>
+        /// <param name="clearCache"></param>
+        /// <returns></returns>
+        Task UpdateSetting(Setting setting, bool clearCache = true);
 
         /// <summary>
         /// Deletes a setting
@@ -33,11 +34,11 @@ namespace ForeverNote.Services.Configuration
         Task DeleteSetting(Setting setting);
 
         /// <summary>
-        /// Get setting by key
+        /// Gets a setting by ident
         /// </summary>
-        /// <param name="key">Key</param>
+        /// <param name="settingId">Setting ident</param>
         /// <returns>Setting</returns>
-        Setting GetSetting(string key);
+        Task<Setting> GetSettingById(string settingId);
 
         /// <summary>
         /// Get setting value by key
@@ -46,8 +47,8 @@ namespace ForeverNote.Services.Configuration
         /// <param name="key">Key</param>
         /// <param name="defaultValue">Default value</param>
         /// <returns>Setting value</returns>
-        T GetSettingByKey<T>(string key, T defaultValue = default(T));
-        
+        T GetSettingByKey<T>(string key, T defaultValue = default);
+
         /// <summary>
         /// Set setting value
         /// </summary>
@@ -62,18 +63,6 @@ namespace ForeverNote.Services.Configuration
         /// </summary>
         /// <returns>Settings</returns>
         IList<Setting> GetAllSettings();
-
-        /// <summary>
-        /// Determines whether a setting exists
-        /// </summary>
-        /// <typeparam name="T">Entity type</typeparam>
-        /// <typeparam name="TPropType">Property type</typeparam>
-        /// <param name="settings">Settings</param>
-        /// <param name="keySelector">Key selector</param>
-        /// <returns>true -setting exists; false - does not exist</returns>
-        bool SettingExists<T, TPropType>(T settings, 
-            Expression<Func<T, TPropType>> keySelector)
-            where T : ISettings, new();
 
         /// <summary>
         /// Load settings
@@ -94,34 +83,12 @@ namespace ForeverNote.Services.Configuration
         /// <typeparam name="T">Type</typeparam>
         /// <param name="settings">Setting instance</param>
         Task SaveSetting<T>(T settings) where T : ISettings, new();
-        
-        /// <summary>
-        /// Save settings object
-        /// </summary>
-        /// <typeparam name="T">Entity type</typeparam>
-        /// <typeparam name="TPropType">Property type</typeparam>
-        /// <param name="settings">Settings</param>
-        /// <param name="keySelector">Key selector</param>
-        /// <param name="clearCache">A value indicating whether to clear cache after setting update</param>
-        Task SaveSetting<T, TPropType>(T settings,
-            Expression<Func<T, TPropType>> keySelector,
-            bool clearCache = true) where T : ISettings, new();
 
         /// <summary>
         /// Delete all settings
         /// </summary>
         /// <typeparam name="T">Type</typeparam>
         Task DeleteSetting<T>() where T : ISettings, new();
-        
-        /// <summary>
-        /// Delete settings object
-        /// </summary>
-        /// <typeparam name="T">Entity type</typeparam>
-        /// <typeparam name="TPropType">Property type</typeparam>
-        /// <param name="settings">Settings</param>
-        /// <param name="keySelector">Key selector</param>
-        Task DeleteSetting<T, TPropType>(T settings,
-            Expression<Func<T, TPropType>> keySelector) where T : ISettings, new();
 
         /// <summary>
         /// Clear cache

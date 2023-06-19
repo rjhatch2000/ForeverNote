@@ -9,8 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Localization\ILocalizationService.cs" />
+    <Compile Remove="Localization\LocalizationService.cs" />
+    <Compile Remove="Messages\IWorkflowMessageService.cs" />
+    <Compile Remove="Messages\WorkflowMessageService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AWSSDK.Core" Version="3.7.107.1" />
     <PackageReference Include="AWSSDK.S3" Version="3.7.104.27" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.16.0" />
     <PackageReference Include="EPPlus" Version="6.2.4" />
     <PackageReference Include="Google.Apis" Version="1.60.0" />
     <PackageReference Include="Google.Apis.AnalyticsReporting.v4" Version="1.60.0.2484" />

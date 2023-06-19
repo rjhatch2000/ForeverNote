@@ -6,15 +6,9 @@ namespace ForeverNote.Core.Domain.Configuration
     /// <summary>
     /// Represents a setting
     /// </summary>
-    public partial class Setting : BaseEntity, ILocalizedEntity
+    public partial class Setting : BaseEntity
     {
         public Setting() {
-            Locales = new List<LocalizedProperty>();
-        }
-        
-        public Setting(string name, string value) {
-            this.Name = name;
-            this.Value = value;
         }
         
         /// <summary>
@@ -23,18 +17,8 @@ namespace ForeverNote.Core.Domain.Configuration
         public string Name { get; set; }
 
         /// <summary>
-        /// Gets or sets the value
+        /// Gets or sets the metadata settings
         /// </summary>
-        public string Value { get; set; }
-
-        /// <summary>
-        /// Gets or sets the collection of locales
-        /// </summary>
-        public IList<LocalizedProperty> Locales { get; set; }
-
-        public override string ToString()
-        {
-            return Name;
-        }
+        public string Metadata { get; set; }
     }
 }

@@ -34,7 +34,7 @@ namespace ForeverNote.Services.Users
         private readonly IUserAttributeParser _userAttributeParser;
         private readonly INoteService _noteService;
         private readonly IUserActivityService _userActivityService;
-        private readonly ILocalizationService _localizationService;
+        private readonly ITranslationService _translationService;
         private readonly ILanguageService _languageService;
 
         #endregion
@@ -52,7 +52,7 @@ namespace ForeverNote.Services.Users
             INoteService noteService,
             IUserAttributeParser userAttributeParser,
             IUserActivityService userActivityService,
-            ILocalizationService localizationService,
+            ITranslationService translationService,
             ILanguageService languageService
         )
         {
@@ -66,7 +66,7 @@ namespace ForeverNote.Services.Users
             _userAttributeParser = userAttributeParser;
             _noteService = noteService;
             _userActivityService = userActivityService;
-            _localizationService = localizationService;
+            _translationService = translationService;
             _languageService = languageService;
         }
 
@@ -119,7 +119,7 @@ namespace ForeverNote.Services.Users
 
             await _queuedEmailService.InsertQueuedEmail(email);
             //activity log
-            await _userActivityService.InsertActivity(string.Format("UserReminder.{0}", userReminder.ReminderRule.ToString()), user.Id, _localizationService.GetResource(string.Format("ActivityLog.{0}", userReminder.ReminderRule.ToString())), user, userReminder.Name);
+            await _userActivityService.InsertActivity(string.Format("UserReminder.{0}", userReminder.ReminderRule.ToString()), user.Id, _translationService.GetResource(string.Format("ActivityLog.{0}", userReminder.ReminderRule.ToString())), user, userReminder.Name);
 
             return true;
         }
@@ -412,7 +412,7 @@ namespace ForeverNote.Services.Users
             var query = from p in _userReminderRepository.Table
                         orderby p.DisplayOrder
                         select p;
-            return await query.ToListAsync();
+            return query.ToList();
         }
 
         /// <summary>
@@ -486,30 +486,30 @@ namespace ForeverNote.Services.Users
             var userReminder = new List<UserReminder>();
             if (String.IsNullOrEmpty(id))
             {
-                userReminder = await (from cr in _userReminderRepository.Table
-                                          where cr.Active && datetimeUtcNow >= cr.StartDateTimeUtc && datetimeUtcNow <= cr.EndDateTimeUtc
-                                          && cr.ReminderRuleId == (int)UserReminderRuleEnum.RegisteredUser
-                                          select cr).ToListAsync();
+                userReminder = (from cr in _userReminderRepository.Table
+                                where cr.Active && datetimeUtcNow >= cr.StartDateTimeUtc && datetimeUtcNow <= cr.EndDateTimeUtc
+                                && cr.ReminderRuleId == (int)UserReminderRuleEnum.RegisteredUser
+                                select cr).ToList();
             }
             else
             {
-                userReminder = await (from cr in _userReminderRepository.Table
-                                          where cr.Id == id && cr.ReminderRuleId == (int)UserReminderRuleEnum.RegisteredUser
-                                          select cr).ToListAsync();
+                userReminder = (from cr in _userReminderRepository.Table
+                                where cr.Id == id && cr.ReminderRuleId == (int)UserReminderRuleEnum.RegisteredUser
+                                select cr).ToList();
             }
             foreach (var reminder in userReminder)
             {
-                var users = await (from cu in _userRepository.Table
-                                       where cu.CreatedOnUtc > reminder.LastUpdateDate && cu.Active && !cu.Deleted
-                                       && (!String.IsNullOrEmpty(cu.Email))
-                                       && !cu.IsSystemAccount
-                                       select cu).ToListAsync();
+                var users = (from cu in _userRepository.Table
+                            where cu.CreatedOnUtc > reminder.LastUpdateDate && cu.Active && !cu.Deleted
+                            && (!String.IsNullOrEmpty(cu.Email))
+                            && !cu.IsSystemAccount
+                            select cu).ToList();
 
                 foreach (var user in users)
                 {
-                    var history = await (from hc in _userReminderHistoryRepository.Table
-                                         where hc.UserId == user.Id && hc.UserReminderId == reminder.Id
-                                         select hc).ToListAsync();
+                    var history = (from hc in _userReminderHistoryRepository.Table
+                                    where hc.UserId == user.Id && hc.UserReminderId == reminder.Id
+                                    select hc).ToList();
                     if (history.Any())
                     {
                         var activereminderhistory = history.FirstOrDefault(x => x.HistoryStatus == UserReminderHistoryStatusEnum.Started);
@@ -579,29 +579,29 @@ namespace ForeverNote.Services.Users
             var userReminder = new List<UserReminder>();
             if (String.IsNullOrEmpty(id))
             {
-                userReminder = await (from cr in _userReminderRepository.Table
-                                          where cr.Active && datetimeUtcNow >= cr.StartDateTimeUtc && datetimeUtcNow <= cr.EndDateTimeUtc
-                                          && cr.ReminderRuleId == (int)UserReminderRuleEnum.LastActivity
-                                          select cr).ToListAsync();
+                userReminder = (from cr in _userReminderRepository.Table
+                                where cr.Active && datetimeUtcNow >= cr.StartDateTimeUtc && datetimeUtcNow <= cr.EndDateTimeUtc
+                                && cr.ReminderRuleId == (int)UserReminderRuleEnum.LastActivity
+                                select cr).ToList();
             }
             else
             {
-                userReminder = await (from cr in _userReminderRepository.Table
-                                          where cr.Id == id && cr.ReminderRuleId == (int)UserReminderRuleEnum.LastActivity
-                                          select cr).ToListAsync();
+                userReminder = (from cr in _userReminderRepository.Table
+                                where cr.Id == id && cr.ReminderRuleId == (int)UserReminderRuleEnum.LastActivity
+                                select cr).ToList();
             }
             foreach (var reminder in userReminder)
             {
-                var users = await (from cu in _userRepository.Table
-                                       where cu.LastActivityDateUtc < reminder.LastUpdateDate && cu.Active && !cu.Deleted
-                                       && (!String.IsNullOrEmpty(cu.Email))
-                                       select cu).ToListAsync();
+                var users = (from cu in _userRepository.Table
+                            where cu.LastActivityDateUtc < reminder.LastUpdateDate && cu.Active && !cu.Deleted
+                            && (!String.IsNullOrEmpty(cu.Email))
+                            select cu).ToList();
 
                 foreach (var user in users)
                 {
-                    var history = await (from hc in _userReminderHistoryRepository.Table
-                                         where hc.UserId == user.Id && hc.UserReminderId == reminder.Id
-                                         select hc).ToListAsync();
+                    var history = (from hc in _userReminderHistoryRepository.Table
+                                    where hc.UserId == user.Id && hc.UserReminderId == reminder.Id
+                                    select hc).ToList();
                     if (history.Any())
                     {
                         var activereminderhistory = history.FirstOrDefault(x => x.HistoryStatus == UserReminderHistoryStatusEnum.Started);

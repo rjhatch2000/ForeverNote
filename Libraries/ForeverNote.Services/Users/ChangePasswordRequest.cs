@@ -3,7 +3,7 @@
 namespace ForeverNote.Services.Users
 {
     /// <summary>
-    /// Change password requst
+    /// Change password request
     /// </summary>
     public class ChangePasswordRequest
     {
@@ -12,17 +12,14 @@ namespace ForeverNote.Services.Users
         /// </summary>
         public string Email { get; set; }
         /// <summary>
-        /// A value indicating whether we should validate request
-        /// </summary>
-        public bool ValidateRequest { get; set; }
-        /// <summary>
         /// Password format
         /// </summary>
-        public PasswordFormat NewPasswordFormat { get; set; }
+        public PasswordFormat PasswordFormat { get; set; }
         /// <summary>
         /// New password
         /// </summary>
         public string NewPassword { get; set; }
+
         /// <summary>
         /// Old password
         /// </summary>
@@ -32,18 +29,16 @@ namespace ForeverNote.Services.Users
         /// Ctor
         /// </summary>
         /// <param name="email">Email</param>
-        /// <param name="validateRequest">A value indicating whether we should validate request</param>
         /// <param name="newPasswordFormat">Password format</param>
         /// <param name="newPassword">New password</param>
         /// <param name="oldPassword">Old password</param>
-        public ChangePasswordRequest(string email, bool validateRequest, 
+        public ChangePasswordRequest(string email,
             PasswordFormat newPasswordFormat, string newPassword, string oldPassword = "")
         {
-            this.Email = email;
-            this.ValidateRequest = validateRequest;
-            this.NewPasswordFormat = newPasswordFormat;
-            this.NewPassword = newPassword;
-            this.OldPassword = oldPassword;
+            Email = email;
+            PasswordFormat = newPasswordFormat;
+            NewPassword = newPassword;
+            OldPassword = oldPassword;
         }
     }
 }

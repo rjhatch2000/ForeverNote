@@ -93,6 +93,6 @@ namespace ForeverNote.Core.Domain.Users
         /// Gets or sets a value for two factor authentication type
         /// </summary>
         public TwoFactorAuthenticationType TwoFactorAuthenticationType { get; set; }
-
+        public string PasswordRegularExpression { get; set; }
     }
 }

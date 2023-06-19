@@ -1,8 +1,6 @@
 using ForeverNote.Core;
 using ForeverNote.Core.Data;
 using ForeverNote.Core.Domain.Common;
-using MongoDB.Bson;
-using MongoDB.Driver;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,89 +8,26 @@ using System.Threading.Tasks;
 namespace ForeverNote.Services.Common
 {
     /// <summary>
-    /// Generic attribute service
+    /// User field service
     /// </summary>
-    public partial class GenericAttributeService : IGenericAttributeService
+    public class GenericAttributeService : IGenericAttributeService
     {
 
         #region Fields
 
-        private readonly IRepository<BaseEntity> _baseRepository;
-        private readonly IRepository<GenericAttributeBaseEntity> _genericattributeBaseEntitRepository;
+        private readonly IRepository<GenericAttributeBaseEntity> _genericAttributeBaseEntityRepository;
         #endregion
 
         #region Ctor
         public GenericAttributeService(
-            IRepository<BaseEntity> baseRepository,
-            IRepository<GenericAttributeBaseEntity> genericattributeBaseEntitRepository)
+            IRepository<GenericAttributeBaseEntity> genericAttributeBaseEntityRepository)
         {
-            _baseRepository = baseRepository;
-            _genericattributeBaseEntitRepository = genericattributeBaseEntitRepository;
+            _genericAttributeBaseEntityRepository = genericAttributeBaseEntityRepository;
         }
 
         #endregion
 
         #region Methods
-
-
-        /// <summary>
-        /// Save attribute value
-        /// </summary>
-        /// <typeparam name="TPropType">Property type</typeparam>
-        /// <param name="entity">Entity name (collection name)</param>
-        /// <param name="entityId">EntityId</param>
-        /// <param name="key">Key</param>
-        /// <param name="value">Value</param>
-        public virtual async Task SaveAttribute<TPropType>(string entity, string entityId, string key, TPropType value)
-        {
-            if (string.IsNullOrEmpty(entity))
-                throw new ArgumentNullException("entity");
-
-            if (string.IsNullOrEmpty(key))
-                throw new ArgumentNullException("key");
-
-            var collection = _baseRepository.Database.GetCollection<GenericAttributeBaseEntity>(entity);
-            var query = _baseRepository.Database.GetCollection<GenericAttributeBaseEntity>(entity).Find(new BsonDocument("_id", entityId)).FirstOrDefault();
-
-            var props = query.GenericAttributes;
-
-            var prop = props.FirstOrDefault(ga =>
-                ga.Key.Equals(key, StringComparison.OrdinalIgnoreCase)); //should be culture invariant
-
-            var valueStr = CommonHelper.To<string>(value);
-
-            if (prop != null)
-            {
-                if (string.IsNullOrWhiteSpace(valueStr))
-                {
-                    //delete
-                    var builder = Builders<GenericAttributeBaseEntity>.Update;
-                    var updatefilter = builder.PullFilter(x => x.GenericAttributes, y => y.Key == prop.Key);
-                    await collection.UpdateManyAsync(new BsonDocument("_id", entityId), updatefilter);
-                }
-                else
-                {
-                    //update
-                    prop.Value = valueStr;
-                    var builder = Builders<GenericAttributeBaseEntity>.Filter;
-                    var filter = builder.Eq(x => x.Id, entityId);
-                    filter = filter & builder.Where(x => x.GenericAttributes.Any(y => y.Key == prop.Key));
-                    var update = Builders<GenericAttributeBaseEntity>.Update
-                        .Set(x => x.GenericAttributes.ElementAt(-1).Value, prop.Value);
-                    await collection.UpdateManyAsync(filter, update);
-                }
-            }
-            else
-            {
-                prop = new GenericAttribute {
-                    Key = key,
-                    Value = valueStr,
-                };
-                var updatebuilder = Builders<GenericAttributeBaseEntity>.Update;
-                var update = updatebuilder.AddToSet(p => p.GenericAttributes, prop);
-                await collection.UpdateOneAsync(new BsonDocument("_id", entityId), update);
-            }
-        }
 
         /// <summary>
         /// Save attribute value
@@ -101,20 +36,22 @@ namespace ForeverNote.Services.Common
         /// <param name="entity">Entity</param>
         /// <param name="key">Key</param>
         /// <param name="value">Value</param>
-        public virtual async Task SaveAttribute<TPropType>(BaseEntity entity, string key, TPropType value)
+        /// <param name="storeId">Store identifier; pass "" if this attribute will be available for all stores</param>
+        public virtual async Task SaveField<TPropType>(BaseEntity entity, string key, TPropType value)
         {
             if (entity == null)
-                throw new ArgumentNullException("entity");
+                throw new ArgumentNullException(nameof(entity));
 
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
 
-            string keyGroup = entity.GetType().Name;
+            var collectionName = entity.GetType().Name;
 
-            var collection = _baseRepository.Database.GetCollection<GenericAttributeBaseEntity>(keyGroup);
-            var query = _baseRepository.Database.GetCollection<GenericAttributeBaseEntity>(keyGroup).Find(new BsonDocument("_id", entity.Id)).FirstOrDefault();
+            _ = _genericAttributeBaseEntityRepository.SetCollection(collectionName);
 
-            var props = query.GenericAttributes;
+            var baseFields = await _genericAttributeBaseEntityRepository.GetByIdAsync(entity.Id);
+
+            var props = baseFields.GenericAttributes;
 
             var prop = props.FirstOrDefault(ga =>
                 ga.Key.Equals(key, StringComparison.OrdinalIgnoreCase)); //should be culture invariant
@@ -126,9 +63,8 @@ namespace ForeverNote.Services.Common
                 if (string.IsNullOrWhiteSpace(valueStr))
                 {
                     //delete
-                    var builder = Builders<GenericAttributeBaseEntity>.Update;
-                    var updatefilter = builder.PullFilter(x => x.GenericAttributes, y => y.Key == prop.Key);
-                    await collection.UpdateManyAsync(new BsonDocument("_id", entity.Id), updatefilter);
+                    await _genericAttributeBaseEntityRepository.PullFilter(entity.Id, x => x.GenericAttributes, y => y.Key == prop.Key);
+
                     var entityProp = entity.GenericAttributes.FirstOrDefault(x => x.Key == prop.Key);
                     if (entityProp != null)
                         entity.GenericAttributes.Remove(entityProp);
@@ -137,13 +73,7 @@ namespace ForeverNote.Services.Common
                 {
                     //update
                     prop.Value = valueStr;
-                    var builder = Builders<GenericAttributeBaseEntity>.Filter;
-                    var filter = builder.Eq(x => x.Id, entity.Id);
-                    filter = filter & builder.Where(x => x.GenericAttributes.Any(y => y.Key == prop.Key));
-                    var update = Builders<GenericAttributeBaseEntity>.Update
-                        .Set(x => x.GenericAttributes.ElementAt(-1).Value, prop.Value);
-
-                    await collection.UpdateManyAsync(filter, update);
+                    await _genericAttributeBaseEntityRepository.UpdateToSet(entity.Id, x => x.GenericAttributes, y => y.Key == prop.Key, prop);
 
                     var entityProp = entity.GenericAttributes.FirstOrDefault(x => x.Key == prop.Key);
                     if (entityProp != null)
@@ -159,34 +89,34 @@ namespace ForeverNote.Services.Common
                         Key = key,
                         Value = valueStr,
                     };
-                    var updatebuilder = Builders<GenericAttributeBaseEntity>.Update;
-                    var update = updatebuilder.AddToSet(p => p.GenericAttributes, prop);
-                    await collection.UpdateOneAsync(new BsonDocument("_id", entity.Id), update);
+                    await _genericAttributeBaseEntityRepository.AddToSet(entity.Id, x => x.GenericAttributes, prop);
+
                     entity.GenericAttributes.Add(prop);
                 }
             }
         }
 
-        public virtual async Task<TPropType> GetAttributesForEntity<TPropType>(BaseEntity entity, string key)
+        public virtual async Task<TPropType> GetFieldsForEntity<TPropType>(BaseEntity entity, string key)
         {
             if (entity == null)
-                throw new ArgumentNullException("entity");
+                throw new ArgumentNullException(nameof(entity));
 
-            var collection = await _genericattributeBaseEntitRepository.Database.GetCollection<GenericAttributeBaseEntity>(entity.GetType().Name)
-                .FindAsync(new BsonDocument("_id", entity.Id));
+            var collectionName = entity.GetType().Name;
+            _ = _genericAttributeBaseEntityRepository.SetCollection(collectionName);
 
-            var props = collection.FirstOrDefault().GenericAttributes;
+            var baseFields = await _genericAttributeBaseEntityRepository.GetByIdAsync(entity.Id);
+            var props = baseFields?.GenericAttributes;
             if (props == null)
-                return default(TPropType);
+                return default;
             props = props.ToList();
             if (!props.Any())
-                return default(TPropType);
+                return default;
 
             var prop = props.FirstOrDefault(ga =>
                 ga.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
 
             if (prop == null || string.IsNullOrEmpty(prop.Value))
-                return default(TPropType);
+                return default;
 
             return CommonHelper.To<TPropType>(prop.Value);
         }

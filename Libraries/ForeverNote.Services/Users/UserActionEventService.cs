@@ -1,7 +1,6 @@
 ﻿using ForeverNote.Core.Caching;
 using ForeverNote.Core.Data;
 using ForeverNote.Core.Domain.Users;
-using ForeverNote.Services.Commands.Models.Users;
 using MediatR;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -48,7 +47,7 @@ namespace ForeverNote.Services.Users
         {
             return await _cacheManager.GetAsync(CUSTOMER_ACTION_TYPE, () =>
             {
-                return _userActionTypeRepository.Table.ToListAsync();
+                return _userActionTypeRepository.Table.ToList();
             });
         }
 

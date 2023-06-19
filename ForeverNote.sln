@@ -64,6 +64,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Grand.Web.Admin", "grandnod
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Grand.Web.Common", "grandnode2\src\Web\Grand.Web.Common\Grand.Web.Common.csproj", "{D95E2AF4-8CCA-4903-9945-DE6C69E3ABF0}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CaptainCommerce.DB", "Libraries\CaptainCommerce.DB\CaptainCommerce.DB.csproj", "{E39701DF-D4D9-4C36-BC78-1E13059E55E2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -154,6 +156,10 @@ Global
 		{D95E2AF4-8CCA-4903-9945-DE6C69E3ABF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D95E2AF4-8CCA-4903-9945-DE6C69E3ABF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D95E2AF4-8CCA-4903-9945-DE6C69E3ABF0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E39701DF-D4D9-4C36-BC78-1E13059E55E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E39701DF-D4D9-4C36-BC78-1E13059E55E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E39701DF-D4D9-4C36-BC78-1E13059E55E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E39701DF-D4D9-4C36-BC78-1E13059E55E2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -184,6 +190,7 @@ Global
 		{FB951475-5F72-4959-A81A-6A2EFA1E9CF8} = {FAB18F2B-ED02-43C3-9B46-9F92E2169C51}
 		{64893E6A-5FAC-4BEE-ACF9-EC66E9CB5B51} = {FAB18F2B-ED02-43C3-9B46-9F92E2169C51}
 		{D95E2AF4-8CCA-4903-9945-DE6C69E3ABF0} = {FAB18F2B-ED02-43C3-9B46-9F92E2169C51}
+		{E39701DF-D4D9-4C36-BC78-1E13059E55E2} = {F2418F56-9620-4BA3-9078-D9732EC8DD48}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {65BA1180-F5CC-42E1-B689-71E14D588393}

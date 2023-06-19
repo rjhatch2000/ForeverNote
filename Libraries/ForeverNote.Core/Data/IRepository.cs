@@ -1,7 +1,6 @@
-﻿using MongoDB.Driver;
-using MongoDB.Driver.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
@@ -13,9 +12,10 @@ namespace ForeverNote.Core.Data
     public partial interface IRepository<T> where T : BaseEntity
     {
 
-        IMongoCollection<T> Collection { get; }
-
-        IMongoDatabase Database { get; }
+        /// <summary>
+        /// Sets a collection
+        /// </summary>
+        bool SetCollection(string collectionName);
 
         /// <summary>
         /// Get entity by identifier
@@ -30,6 +30,12 @@ namespace ForeverNote.Core.Data
         /// <param name="id">Identifier</param>
         /// <returns>Entity</returns>
         Task<T> GetByIdAsync(string id);
+
+        /// <summary>
+        /// Get all entities in collection
+        /// </summary>
+        /// <returns>collection of entities</returns>
+        Task<List<T>> GetAllAsync();
 
         /// <summary>
         /// Insert entity
@@ -56,6 +62,12 @@ namespace ForeverNote.Core.Data
         Task<IEnumerable<T>> InsertAsync(IEnumerable<T> entities);
 
         /// <summary>
+        /// Async Insert many entities
+        /// </summary>
+        /// <param name="entities">Entities</param>
+        Task InsertManyAsync(IEnumerable<T> entities);
+
+        /// <summary>
         /// Update entity
         /// </summary>
         /// <param name="entity">Entity</param>
@@ -72,6 +84,118 @@ namespace ForeverNote.Core.Data
         /// </summary>
         /// <param name="entities">Entities</param>
         void Update(IEnumerable<T> entities);
+
+        /// <summary>
+        /// Update field for entity
+        /// </summary>
+        /// <typeparam name="U">Value</typeparam>
+        /// <param name="id">Ident record</param>
+        /// <param name="expression">Linq Expression</param>
+        /// <param name="value">value</param>
+        Task UpdateField<U>(string id, Expression<Func<T, U>> expression, U value);
+
+        /// <summary>
+        /// Inc field for entity
+        /// </summary>
+        /// <typeparam name="U">Value</typeparam>
+        /// <param name="id">Ident record</param>
+        /// <param name="expression">Linq Expression</param>
+        /// <param name="value">value</param>
+        Task IncField<U>(string id, Expression<Func<T, U>> expression, U value);
+
+        /// <summary>
+        /// Updates a single entity
+        /// </summary>
+        /// <param name="filterexpression"></param>
+        /// <param name="updateBuilder"></param>
+        /// <returns></returns>
+        Task UpdateOneAsync(Expression<Func<T, bool>> filterexpression, UpdateBuilder<T> updateBuilder);
+
+        /// <summary>
+        /// Updates a many entities
+        /// </summary>
+        /// <param name="filterexpression"></param>
+        /// <param name="updateBuilder"></param>
+        /// <returns></returns>
+        Task UpdateManyAsync(Expression<Func<T, bool>> filterexpression, UpdateBuilder<T> updateBuilder);
+
+        /// <summary>
+        /// Add to set - add subdocument
+        /// </summary>
+        /// <typeparam name="U"></typeparam>
+        /// <param name="id"></param>
+        /// <param name="field"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        Task AddToSet<U>(string id, Expression<Func<T, IEnumerable<U>>> field, U value);
+
+        /// <summary>
+        /// Update subdocument
+        /// </summary>
+        /// <typeparam name="U">Document</typeparam>
+        /// <typeparam name="Z">Subdocuments</typeparam>
+        /// <param name="id">Ident of entitie</param>
+        /// <param name="field"></param>
+        /// <param name="elemFieldMatch">Subdocument field to match</param>
+        /// <param name="elemMatch">Subdocument ident value</param>
+        /// <param name="value">Subdocument - to update (all values)</param>
+        /// <returns></returns>
+        Task UpdateToSet<U, Z>(string id, Expression<Func<T, IEnumerable<U>>> field, Expression<Func<U, Z>> elemFieldMatch, Z elemMatch, U value);
+
+        /// <summary>
+        /// Update subdocument
+        /// </summary>
+        /// <typeparam name="U">Document</typeparam>
+        /// <typeparam name="Z">Subdocuments</typeparam>
+        /// <param name="id">Ident of entitie</param>
+        /// <param name="field"></param>
+        /// <param name="elemFieldMatch">Subdocument field to match</param>
+        /// <param name="value">Subdocument - to update (all values)</param>
+        /// <returns></returns>
+        Task UpdateToSet<U>(string id, Expression<Func<T, IEnumerable<U>>> field, Expression<Func<U, bool>> elemFieldMatch, U value);
+
+        /// <summary>
+        /// Update subdocuments
+        /// </summary>
+        /// <typeparam name="T">Document</typeparam>
+        /// <typeparam name="Z">Subdocuments</typeparam>
+        /// <param name="id">Ident of entitie</param>
+        /// <param name="field"></param>
+        /// <param name="elemFieldMatch">Subdocument field to match</param>
+        /// <param name="value">Subdocument - to update (all values)</param>
+        /// <returns></returns>
+        Task UpdateToSet<U>(Expression<Func<T, IEnumerable<U>>> field, U elemFieldMatch, U value);
+
+        /// <summary>
+        /// Delete subdocument
+        /// </summary>
+        /// <typeparam name="U"></typeparam>
+        /// <typeparam name="Z"></typeparam>
+        /// <param name="id"></param>
+        /// <param name="field"></param>
+        /// <param name="elemFieldMatch"></param>
+        /// <param name="elemMatch"></param>
+        /// <returns></returns>
+        Task PullFilter<U, Z>(string id, Expression<Func<T, IEnumerable<U>>> field, Expression<Func<U, Z>> elemFieldMatch, Z elemMatch);
+
+        /// <summary>
+        /// Delete subdocument
+        /// </summary>
+        /// <typeparam name="U"></typeparam>
+        /// <param name="id"></param>
+        /// <param name="field"></param>
+        /// <param name="elemFieldMatch"></param>
+        /// <returns></returns>
+        Task PullFilter<U>(string id, Expression<Func<T, IEnumerable<U>>> field, Expression<Func<U, bool>> elemFieldMatch);
+
+        /// <summary>
+        /// Delete subdocument
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="field"></param>
+        /// <param name="element"></param>
+        /// <returns></returns>
+        Task Pull(string id, Expression<Func<T, IEnumerable<string>>> field, string element);
 
         /// <summary>
         /// Async Update entities
@@ -103,67 +227,25 @@ namespace ForeverNote.Core.Data
         Task<IEnumerable<T>> DeleteAsync(IEnumerable<T> entities);
 
         /// <summary>
-        /// Determines whether a list contains any elements
+        /// Delete a many entities
         /// </summary>
+        /// <param name="filterexpression"></param>
         /// <returns></returns>
-        bool Any();
+        Task DeleteManyAsync(Expression<Func<T, bool>> filterexpression);
 
         /// <summary>
-        /// Determines whether any element of a list satisfies a condition.
+        /// Clear entities
         /// </summary>
-        /// <param name="where"></param>
-        /// <returns></returns>
-        bool Any(Expression<Func<T, bool>> where);
-
-        /// <summary>
-        /// Async determines whether a list contains any elements
-        /// </summary>
-        /// <returns></returns>
-        Task<bool> AnyAsync();
-
-        /// <summary>
-        /// Async determines whether any element of a list satisfies a condition.
-        /// </summary>
-        /// <param name="where"></param>
-        /// <returns></returns>
-        Task<bool> AnyAsync(Expression<Func<T, bool>> where);
-
-        /// <summary>
-        /// Returns the number of elements in the specified sequence.
-        /// </summary>
-        /// <returns></returns>
-        long Count();
-
-        /// <summary>
-        /// Returns the number of elements in the specified sequence that satisfies a condition.
-        /// </summary>
-        /// <param name="where"></param>
-        /// <returns></returns>
-        long Count(Expression<Func<T, bool>> where);
-
-        /// <summary>
-        /// Async returns the number of elements in the specified sequence
-        /// </summary>
-        /// <returns></returns>
-        Task<long> CountAsync();
-
-        /// <summary>
-        /// Async returns the number of elements in the specified sequence that satisfies a condition.
-        /// </summary>
-        /// <param name="where"></param>
-        /// <returns></returns>
-        Task<long> CountAsync(Expression<Func<T, bool>> where);
+        Task ClearAsync();
 
         /// <summary>
         /// Gets a table
         /// </summary>
-        IMongoQueryable<T> Table { get; }
+        IQueryable<T> Table { get; }
 
         /// <summary>
-        /// Get collection by filter definitions
+        /// Gets a table collection
         /// </summary>
-        /// <param name="query"></param>
-        /// <returns></returns>
-        IList<T> FindByFilterDefinition(FilterDefinition<T> query);
+        IQueryable<T> TableCollection(string collectionName);
     }
 }

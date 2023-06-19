@@ -1,16 +1,15 @@
-﻿using ForeverNote.Core.Caching;
+﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using ForeverNote.Core;
+using ForeverNote.Core.Caching;
 using ForeverNote.Core.Configuration;
 using ForeverNote.Core.Data;
 using ForeverNote.Core.Domain.Common;
 using ForeverNote.Core.Domain.Media;
-using ForeverNote.Services.Configuration;
 using ForeverNote.Services.Logging;
 using MediatR;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using System;
-using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace ForeverNote.Services.Media
@@ -18,15 +17,14 @@ namespace ForeverNote.Services.Media
     /// <summary>
     /// Picture service for Windows Azure
     /// </summary>
-    public partial class AzurePictureService : PictureService
+    public class AzurePictureService : PictureService
     {
         #region Fields
 
-        private static CloudStorageAccount _storageAccount = null;
-        private static CloudBlobClient blobClient = null;
-        private static CloudBlobContainer container_thumb = null;
+        private static BlobContainerClient _container = null;
+        private readonly AzureConfig _config;
+        private readonly IMimeMappingService _mimeMappingService;
 
-        private readonly ForeverNoteConfig _config;
         #endregion
 
         #region Ctor
@@ -34,25 +32,29 @@ namespace ForeverNote.Services.Media
         public AzurePictureService(
             CommonSettings commonSettings,
             IRepository<Picture> pictureRepository,
-            ISettingService settingService,
             ILogger logger,
             IMediator mediator,
-            IWebHostEnvironment hostingEnvironment,
-            ICacheManager cacheManager,
+            IWorkContext workContext,
+            ICacheBase cacheBase,
+            IMediaFileStore mediaFileStore,
             MediaSettings mediaSettings,
-            ForeverNoteConfig config
-        ) : base(
+            StorageSettings storageSettings,
+            AzureConfig config,
+            IMimeMappingService mimeMappingService
+            )
+            : base(
                 commonSettings,
                 pictureRepository,
-                settingService,
                 logger,
                 mediator,
-                hostingEnvironment,
-                cacheManager,
-                mediaSettings
-        )
+                workContext,
+                cacheBase,
+                mediaFileStore,
+                mediaSettings,
+                storageSettings)
         {
             _config = config;
+            _mimeMappingService = mimeMappingService;
 
             if (string.IsNullOrEmpty(_config.AzureBlobStorageConnectionString))
                 throw new Exception("Azure connection string for BLOB is not specified");
@@ -61,29 +63,13 @@ namespace ForeverNote.Services.Media
             if (string.IsNullOrEmpty(_config.AzureBlobStorageEndPoint))
                 throw new Exception("Azure end point for BLOB is not specified");
 
-            _storageAccount = CloudStorageAccount.Parse(_config.AzureBlobStorageConnectionString);
-            if (_storageAccount == null)
-                throw new Exception("Azure connection string for BLOB is not wrong");
+            _container = new BlobContainerClient(_config.AzureBlobStorageConnectionString, _config.AzureBlobStorageContainerName);
 
-            //should we do it for each HTTP request?
-            blobClient = _storageAccount.CreateCloudBlobClient();
         }
 
         #endregion
 
         #region Utilities
-
-        protected async Task InitContainerThumb()
-        {
-            if (container_thumb == null)
-            {
-                var containerPermissions = new BlobContainerPermissions();
-                containerPermissions.PublicAccess = BlobContainerPublicAccessType.Blob;
-                container_thumb = blobClient.GetContainerReference(_config.AzureBlobStorageContainerName);
-                await container_thumb.CreateIfNotExistsAsync();
-                await container_thumb.SetPermissionsAsync(containerPermissions);
-            }
-        }
 
         /// <summary>
         /// Delete picture thumbs
@@ -91,16 +77,12 @@ namespace ForeverNote.Services.Media
         /// <param name="picture">Picture</param>
         protected override async Task DeletePictureThumbs(Picture picture)
         {
-            await InitContainerThumb();
+            var filter = $"{picture.Id}";
+            var blobs = _container.GetBlobs(BlobTraits.All, BlobStates.All, filter);
 
-            BlobContinuationToken continuationToken = null;
-            string filter = string.Format("{0}", picture.Id);
-            var files = await container_thumb.ListBlobsSegmentedAsync(filter, true, BlobListingDetails.All, int.MaxValue, continuationToken, null, null);
-
-            foreach (var ff in files.Results)
+            foreach (var blob in blobs)
             {
-                CloudBlockBlob blockBlob = (CloudBlockBlob)ff;
-                await blockBlob.DeleteAsync();
+                await _container.DeleteBlobAsync(blob.Name);
             }
         }
 
@@ -109,10 +91,12 @@ namespace ForeverNote.Services.Media
         /// </summary>
         /// <param name="thumbFileName">Filename</param>
         /// <returns>Local picture thumb path</returns>
-        protected override string GetThumbLocalPath(string thumbFileName)
+        protected override async Task<string> GetThumbPhysicalPath(string thumbFileName)
         {
-            var thumbFilePath = _config.AzureBlobStorageEndPoint + _config.AzureBlobStorageContainerName + "/" + thumbFileName;
-            return thumbFilePath;
+            var thumbFilePath = $"{_config.AzureBlobStorageEndPoint}{_config.AzureBlobStorageContainerName}/{thumbFileName}";
+            var blobClient = _container.GetBlobClient(thumbFileName);
+            bool exists = await blobClient.ExistsAsync();
+            return  exists? thumbFilePath : string.Empty;
         }
 
         /// <summary>
@@ -124,43 +108,37 @@ namespace ForeverNote.Services.Media
         protected override string GetThumbUrl(string thumbFileName, string storeLocation = null)
         {
             var url = _config.AzureBlobStorageEndPoint + _config.AzureBlobStorageContainerName + "/";
-
-            url = url + thumbFileName;
+            url += thumbFileName;
             return url;
-        }
-
-        /// <summary>
-        /// Get a value indicating whether some file (thumb) already exists
-        /// </summary>
-        /// <param name="thumbFilePath">Thumb file path</param>
-        /// <param name="thumbFileName">Thumb file name</param>
-        /// <returns>Result</returns>
-        protected override async Task<bool> GeneratedThumbExists(string thumbFilePath, string thumbFileName)
-        {
-            try
-            {
-                await InitContainerThumb();
-                CloudBlockBlob blockBlob = container_thumb.GetBlockBlobReference(thumbFileName);
-                return await blockBlob.ExistsAsync();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex);
-                return false;
-            }
         }
 
         /// <summary>
         /// Save a value indicating whether some file (thumb) already exists
         /// </summary>
-        /// <param name="thumbFilePath">Thumb file path</param>
         /// <param name="thumbFileName">Thumb file name</param>
         /// <param name="binary">Picture binary</param>
-        protected override Task SaveThumb(string thumbFilePath, string thumbFileName, byte[] binary)
+        protected override Task SaveThumb(string thumbFileName, byte[] binary)
         {
-            InitContainerThumb().Wait();
-            CloudBlockBlob blockBlob = container_thumb.GetBlockBlobReference(thumbFileName);
-            blockBlob.UploadFromByteArrayAsync(binary, 0, binary.Length).Wait();
+                    
+            Stream stream = new MemoryStream(binary);
+            _container.UploadBlob(thumbFileName, stream);
+
+            //Update content type and other properties 
+            var contentType = _mimeMappingService.Map(thumbFileName);
+            var blobClient = _container.GetBlobClient(thumbFileName);            
+            BlobProperties properties = blobClient.GetProperties();
+            BlobHttpHeaders blobHttpHeaders = new BlobHttpHeaders {
+                // Set the MIME ContentType every time the properties 
+                // are updated or the field will be cleared
+                ContentType = contentType,
+                // Populate remaining headers with 
+                // the pre-existing properties
+                CacheControl = properties.CacheControl,
+                ContentDisposition = properties.ContentDisposition,
+                ContentEncoding = properties.ContentEncoding,
+                ContentHash = properties.ContentHash
+            };
+            blobClient.SetHttpHeaders(blobHttpHeaders);            
             return Task.CompletedTask;
         }
 

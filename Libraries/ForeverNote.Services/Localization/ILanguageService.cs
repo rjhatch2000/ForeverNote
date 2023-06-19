@@ -7,14 +7,9 @@ namespace ForeverNote.Services.Localization
     /// <summary>
     /// Language service interface
     /// </summary>
-    public partial interface ILanguageService
+    public interface ILanguageService
     {
-        /// <summary>
-        /// Deletes a language
-        /// </summary>
-        /// <param name="language">Language</param>
-        Task DeleteLanguage(Language language);
-
+        
         /// <summary>
         /// Gets all languages
         /// </summary>
@@ -30,6 +25,13 @@ namespace ForeverNote.Services.Localization
         Task<Language> GetLanguageById(string languageId);
 
         /// <summary>
+        /// Gets a language
+        /// </summary>
+        /// <param name="languageCode">Language code</param>
+        /// <returns>Language</returns>
+        Task<Language> GetLanguageByCode(string languageCode);
+
+        /// <summary>
         /// Inserts a language
         /// </summary>
         /// <param name="language">Language</param>
@@ -40,5 +42,12 @@ namespace ForeverNote.Services.Localization
         /// </summary>
         /// <param name="language">Language</param>
         Task UpdateLanguage(Language language);
+
+        /// <summary>
+        /// Deletes a language
+        /// </summary>
+        /// <param name="language">Language</param>
+        Task DeleteLanguage(Language language);
+
     }
 }
